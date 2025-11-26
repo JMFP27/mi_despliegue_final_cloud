@@ -43,7 +43,7 @@ const app: ElysiaApiAdapter = new ElysiaApiAdapter(
 // FIX TS2339: Cambiamos 'app.run()' por 'app.listen()' ya que es el método estándar
 // que utiliza Elysia (y probablemente el que está implementado en ElysiaApiAdapter).
 // Volvemos a pasar SERVER_PORT para asegurar que Elysia sepa dónde escuchar.
-app.listen(SERVER_PORT) 
+app.run(SERVER_PORT);
 
 // El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
 // en el log de Azure (puertos 3000 y 8080).
