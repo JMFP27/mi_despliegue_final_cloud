@@ -22,9 +22,17 @@ export class ElysiaApiAdapter {
             medicalDeviceService
         );
 
-        this.app = new Elysia()
-            .use(openapi({}))
-            .use(this.controller.routes());
+        // CORRECCIÓN TS2322: Romper la cadena de .use() para evitar un error de 
+        // tipado complejo al mezclar openapi y el controlador.
+        let app = new Elysia();
+
+        // 1. Aplicar openapi primero (si es la intención)
+        app = app.use(openapi({}));
+
+        // 2. Aplicar las rutas del controlador
+        app = app.use(this.controller.routes());
+        
+        this.app = app;
     }
 
     // ✅ Corrección: aceptar puerto como parámetro
