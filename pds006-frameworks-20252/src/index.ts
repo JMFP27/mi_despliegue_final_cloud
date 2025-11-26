@@ -1,5 +1,6 @@
-// 1. CORRECCIÓN DE IMPORTACIÓN: Se revierte la ruta de importación para que el compilador TypeScript (ts-node) pueda resolver el módulo correctamente.
-import { ElysiaApiAdapter } from "./adapter/api/elysia"; 
+// 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Usamos la extensión .js para cumplir con el estricto estándar de Módulos ES (ERR_UNSUPPORTED_DIR_IMPORT). 
+// Esto le dice al runtime de Node.js exactamente qué archivo cargar (el archivo .ts compilado a .js).
+import { ElysiaApiAdapter } from "./adapter/api/elysia.js"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
@@ -41,8 +42,7 @@ const app: ElysiaApiAdapter = new ElysiaApiAdapter(
 )
 
 // 2. INICIAR LA APLICACIÓN
-// FIX FINAL: Revertimos al método 'run(SERVER_PORT)'. 
-// El compilador de TypeScript (TS2339) exige que el método se llame 'run' en la clase ElysiaApiAdapter.
+// Se mantiene 'run(SERVER_PORT)' para satisfacer el tipado de la clase ElysiaApiAdapter (TS2339).
 app.run(SERVER_PORT);
 
 // El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
