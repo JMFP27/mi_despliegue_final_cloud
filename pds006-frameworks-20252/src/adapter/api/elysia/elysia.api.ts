@@ -1,12 +1,13 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
-// CORRECCIÓN CLAVE: Importamos 'ElysiaApiAdapter' (el nombre real exportado) 
-// y le damos un alias local de 'RoutesController' para evitar el error TS2305.
 import { ElysiaApiAdapter as RoutesController } from "./controller.elysia";
 import openapi from "@elysiajs/openapi";
 import Elysia from "elysia";
 
+// Definimos un tipo genérico para simplificar el casting y evitar el error TS2322.
+// Usamos 'any' para decirle a TypeScript que no se preocupe por la complejidad del estado interno.
+type BaseElysia = Elysia<any, any, any, any, any, any, any>;
+
 export class ElysiaApiAdapter {
-    // Usamos el nuevo nombre de tipo
     private controller: RoutesController;
     public app: Elysia;
 
@@ -15,29 +16,30 @@ export class ElysiaApiAdapter {
         deviceService: DeviceService,
         medicalDeviceService: MedicalDeviceService
     ) {
-        // Usamos el nuevo nombre para la instanciación
         this.controller = new RoutesController(
             computerService,
             deviceService,
             medicalDeviceService
         );
 
-        // CORRECCIÓN TS2322: Romper la cadena de .use() para evitar un error de 
-        // tipado complejo al mezclar openapi y el controlador.
+        // CORRECCIÓN TS2322: Romper la cadena de .use() y usar casting
+        // para evitar que TypeScript se confunda al intentar fusionar los tipos
+        // complejos de openapi y el sub-router.
         let app = new Elysia();
 
-        // 1. Aplicar openapi primero (si es la intención)
+        // 1. Aplicar openapi
         app = app.use(openapi({}));
 
-        // 2. Aplicar las rutas del controlador
-        app = app.use(this.controller.routes());
+        // 2. Aplicar las rutas del controlador, usando un cast (as BaseElysia)
+        // Esto le indica a TypeScript que trate el sub-router como una instancia genérica de Elysia,
+        // resolviendo el error de incompatibilidad de 'onStart'.
+        app = app.use(this.controller.routes() as BaseElysia);
         
         this.app = app;
     }
 
-    // ✅ Corrección: aceptar puerto como parámetro
     async run(port: number = 3000) {
-        await this.app.listen(port); // ← await opcional, pero recomendado
+        await this.app.listen(port);
         console.log(`📡 El servidor está corriendo en el puerto ${port}`);
     }
 }
