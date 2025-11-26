@@ -1,6 +1,6 @@
-// 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Usamos la ruta completa y la extensión .js para cumplir con el estricto estándar de Módulos ES (ERR_UNSUPPORTED_DIR_IMPORT). 
-// La ruta ahora es explícita: "./adapter/api/elysia/elysia.api.js"
-import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api.js"; 
+// 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Cambiamos la extensión a .ts para que ts-node resuelva correctamente el archivo fuente.
+// La ruta es: "./adapter/api/elysia/elysia.api.ts"
+import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api.ts"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
