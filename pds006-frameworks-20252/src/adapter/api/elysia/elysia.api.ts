@@ -1,5 +1,5 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
-import { Controller } from "./controller.elysia.ts"; // FIX: Importación corregida para el archivo 'controller.elysia.ts'
+import { Controller } from "./controller.elysia"; // FIX CRÍTICO: Eliminado el '.ts' para resolver el error TS5097.
 
 import openapi from "@elysiajs/openapi";
 import Elysia from "elysia";
@@ -19,8 +19,9 @@ export class ElysiaApiAdapter {
             medicalDeviceService
         )
 
-        // FIX (TS2322): Aplicamos openapi y luego usamos .group('/api', ...) para definir el prefijo,
-        // lo que resuelve el conflicto de tipado con Elysia.
+        // Solución para el error TS2322 (conflicto de tipos de Elysia/OpenAPI):
+        // Inicializamos la aplicación sin prefijo, aplicamos el plugin openapi,
+        // y luego usamos .group('/api', ...) para definir el prefijo.
         this.app = new Elysia()
             .use(openapi({}))
             // Agrupamos las rutas de los controladores bajo el prefijo '/api'
