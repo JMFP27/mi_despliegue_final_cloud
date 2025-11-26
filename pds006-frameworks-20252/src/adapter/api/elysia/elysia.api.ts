@@ -1,12 +1,11 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
-import Controller from "./controller.elysia"; // FIX 1: Importación de 'default export' para resolver TS2305.
-
+import Controller from "./controller.elysia";
 import openapi from "@elysiajs/openapi";
 import Elysia from "elysia";
 
 export class ElysiaApiAdapter {
-    private controller: Controller
-    public app: Elysia // Mantenemos la aplicación Elysia pública
+    private controller: Controller;
+    public app: Elysia;
 
     constructor(
         computerService: ComputerService,
@@ -17,17 +16,18 @@ export class ElysiaApiAdapter {
             computerService,
             deviceService,
             medicalDeviceService
-        )
+        );
 
-        // Solución para los errores TS2322 (conflicto de tipos de Elysia/OpenAPI):
-        // Se añade 'as any' al final de la cadena de plugins para mitigar el error de tipado (TS2322).
-        this.app = (new Elysia()
-            .use(openapi({}))
-            // Agrupamos las rutas de los controladores bajo el prefijo '/api'
-            .group('/api', (app) =>
-                app.use(this.controller.routes())
-            )) as any // FIX 2: Coerción de tipo para resolver TS2322.
+        // Paso 1: crea la app base
+        const app = new Elysia();
+
+        // Paso 2: agrega OpenAPI
+        app.use(openapi({}));
+
+        // Paso 3: agrega las rutas (sin .group si no es necesario, o con .group pero sin encadenar tipos complejos)
+        const router = this.controller.routes(); // esto devuelve una instancia de Elysia
+        app.use(router); // ts-node + Elysia v1+ maneja esto bien
+
+        this.app = app;
     }
-
-    // El método 'listen' se delega al index.ts para el inicio correcto.
 }
