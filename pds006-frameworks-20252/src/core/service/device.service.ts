@@ -1,5 +1,5 @@
-import { DeviceRepository } from "@core/repository";
-import { DeviceCriteria, DeviceId, EnteredDevice } from "@core/domain";
+import { DeviceRepository } from "../repository"; // Alias corregido
+import { DeviceCriteria, DeviceId, EnteredDevice } from "../domain"; // Alias corregido
 import { SERVICE_ERRORS } from "./error";
 
 export class DeviceService {
