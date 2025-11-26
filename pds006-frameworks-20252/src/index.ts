@@ -1,5 +1,3 @@
-import 'elysia/adapter/node';
-
 import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
