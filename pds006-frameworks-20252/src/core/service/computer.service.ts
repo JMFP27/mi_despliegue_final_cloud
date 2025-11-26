@@ -1,6 +1,6 @@
-import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, mapRequestToComputer } from "@core/dto";
-import { Computer, DeviceCriteria, DeviceId, FrequentComputer } from "@core/domain";
-import { DevicePhotoRepository, DeviceRepository } from "@core/repository";
+import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, mapRequestToComputer } from "../../dto"; // Alias corregido
+import { Computer, DeviceCriteria, DeviceId, FrequentComputer } from "../domain"; // Alias corregido
+import { DevicePhotoRepository, DeviceRepository } from "../repository"; // Alias corregido
 import { SERVICE_ERRORS } from "./error";
 import { Helper } from "./helper";
 
