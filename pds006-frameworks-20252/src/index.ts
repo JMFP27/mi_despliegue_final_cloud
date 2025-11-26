@@ -40,7 +40,7 @@ const app: ElysiaApiAdapter = new ElysiaApiAdapter(
 
 // 2. INICIAR LA APLICACIÓN
 // Nota: app.run() inicia el servidor. 
-app.run(SERVER_PORT) 
+app.listen(SERVER_PORT) 
 
 // El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
 // en el log de Azure (puertos 3000 y 8080).
