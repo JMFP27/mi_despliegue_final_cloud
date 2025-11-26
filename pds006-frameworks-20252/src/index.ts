@@ -1,7 +1,6 @@
-// 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Revertimos a la importación sin extensión (p. ej., './elysia')
-// para satisfacer al compilador TypeScript y a ts-node, que lanza el error TS2307 cuando se usa .js o .ts.
-// Dejamos la importación sin extensión para eliminar el error TS2307.
-import { ElysiaApiAdapter } from "./adapter/api/elysia"; 
+// 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Usamos la ruta completa y la extensión .js para cumplir con el estricto estándar de Módulos ES (ERR_UNSUPPORTED_DIR_IMPORT). 
+// La ruta ahora es explícita: "./adapter/api/elysia/elysia.api.js"
+import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api.js"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
