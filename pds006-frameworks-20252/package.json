@@ -13,7 +13,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-
     "@elysiajs/cors": "^1.0.2",
     "@elysiajs/swagger": "^1.0.2", 
     "@sinclair/typebox": "^0.34.0",
@@ -22,7 +21,6 @@
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
-    "bun-types": "^1.1.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
