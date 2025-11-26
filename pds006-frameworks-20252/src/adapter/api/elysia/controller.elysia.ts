@@ -1,12 +1,13 @@
-import { ComputerService, DeviceService, MedicalDeviceService } from "../../../core/service"; // CORRECCIÓN: Rutas relativas
+import { ComputerService, DeviceService, MedicalDeviceService } from "../../../core/service";
 import Elysia from "elysia";
 import { CRITERIA_QUERY_PARAMS_SCHEMA, CriteriaHelper, CriteriaQueryParams } from "./criteria.helper";
-import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "../../../core/dto"; // CORRECCIÓN: Rutas relativas
+import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "../../../core/dto";
 import z from "zod";
-import { Computer, EnteredDevice, FrequentComputer, MedicalDevice } from "../../../core/domain"; // CORRECCIÓN: Rutas relativas
+import { Computer, EnteredDevice, FrequentComputer, MedicalDevice } from "../../../core/domain";
 
-// Se ha cambiado el nombre de la clase a ElysiaApiAdapter para coincidir con la importación en src/index.ts
-export class ElysiaApiAdapter {
+// Clase Controller que maneja las rutas y delega en los servicios.
+// Utiliza 'export default' para coincidir con la importación en el adaptador y solucionar TS1192.
+export default class Controller {
     constructor(
         private computerService: ComputerService,
         private deviceService: DeviceService,
@@ -14,9 +15,8 @@ export class ElysiaApiAdapter {
     ) {}
 
     public routes() {
-        return new Elysia({
-            prefix: "/api"
-        })
+        // Se elimina el 'prefix: "/api"' de aquí, ya que se aplica en el adaptador.
+        return new Elysia()
             .guard({
                 query: CRITERIA_QUERY_PARAMS_SCHEMA
             })
@@ -49,7 +49,7 @@ export class ElysiaApiAdapter {
             )
             .get(
                 "/medicaldevices",
-                ({ query }) =>  this.getMedicalDevices(query as CriteriaQueryParams)
+                ({ query }) => this.getMedicalDevices(query as CriteriaQueryParams)
             )
             .get(
                 "/computers/frequent",
@@ -114,13 +114,5 @@ export class ElysiaApiAdapter {
 
     async checkoutDevice(id: string): Promise<void> {
         return this.deviceService.checkoutDevice(id)
-    }
-
-    // --- CORRECCIÓN CRÍTICA ---
-    // Método run actualizado para aceptar el puerto como argumento
-    public run(port: number) {
-        const app = this.routes();
-        app.listen(port);
-        console.log(`🦊 Elysia is running at port ${port}`);
     }
 }
