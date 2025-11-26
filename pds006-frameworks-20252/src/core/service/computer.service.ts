@@ -1,4 +1,4 @@
-import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, mapRequestToComputer } from "../../dto"; // Alias corregido
+import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, mapRequestToComputer } from "../dto"; // Corregido: La ruta correcta es '../dto' (un nivel arriba, luego al directorio 'dto').
 import { Computer, DeviceCriteria, DeviceId, FrequentComputer } from "../domain"; // Alias corregido
 import { DevicePhotoRepository, DeviceRepository } from "../repository"; // Alias corregido
 import { SERVICE_ERRORS } from "./error";
