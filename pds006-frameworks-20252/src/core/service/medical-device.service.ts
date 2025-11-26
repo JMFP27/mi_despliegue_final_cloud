@@ -1,6 +1,6 @@
-import { mapRequestToMedicalDevice, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "@core/dto";
-import { DevicePhotoRepository, DeviceRepository } from "@core/repository";
-import { DeviceCriteria, MedicalDevice } from "@core/domain";
+import { mapRequestToMedicalDevice, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "../dto"; // Alias corregido
+import { DevicePhotoRepository, DeviceRepository } from "../repository"; // Alias corregido
+import { DeviceCriteria, MedicalDevice } from "../domain"; // Alias corregido
 import { Helper } from "./helper";
 
 export class MedicalDeviceService {
