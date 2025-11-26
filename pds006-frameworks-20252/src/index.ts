@@ -40,7 +40,7 @@ const app: ElysiaApiAdapter = new ElysiaApiAdapter(
 )
 
 // 2. INICIAR LA APLICACIÓN
-// FIX TS2339: Cambiamos 'app.run()' por 'app.listen()' ya que es el método estándar
+// FIX TS2339: Cambiamos 'app.run()' por 'app.listen()' ya que es el método estándar.
 // que utiliza Elysia (y probablemente el que está implementado en ElysiaApiAdapter).
 // Volvemos a pasar SERVER_PORT para asegurar que Elysia sepa dónde escuchar.
 app.run(SERVER_PORT);
