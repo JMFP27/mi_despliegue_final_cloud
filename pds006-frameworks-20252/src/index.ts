@@ -32,7 +32,7 @@ const app = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. INICIAR LA APLICACIÓN USANDO EL PUERTO LEÍDO
+// 2. INICIAR LA APLICACIÓN USANDO EL PUERTO LEÍDO.
 // Se pasa el puerto como argumento al método run.
 app.run(SERVER_PORT) 
 
