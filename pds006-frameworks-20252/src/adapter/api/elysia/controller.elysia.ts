@@ -5,7 +5,7 @@ import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, Me
 import z from "zod";
 import { Computer, EnteredDevice, FrequentComputer, MedicalDevice } from "@/core/domain";
 
-// NOTA: Renombrado de 'Controller' a 'ElysiaApiAdapter' para coincidir con src/index.ts
+// Se ha cambiado el nombre de la clase a ElysiaApiAdapter para coincidir con la importación en src/index.ts
 export class ElysiaApiAdapter {
     constructor(
         private computerService: ComputerService,
@@ -74,7 +74,7 @@ export class ElysiaApiAdapter {
             )
     }
 
-    // --- IMPLEMENTACIÓN DE LOS MÉTODOS ---
+    // --- MÉTODOS DEL CONTROLADOR ---
 
     async checkinComputer(request: ComputerRequest): Promise<Computer> {
         return this.computerService.checkinComputer(request)
@@ -116,16 +116,11 @@ export class ElysiaApiAdapter {
         return this.deviceService.checkoutDevice(id)
     }
 
-    // --- MÉTODO RUN CORREGIDO ---
-    // Este método recibe el puerto numérico y levanta el servidor.
+    // --- CORRECCIÓN CRÍTICA ---
+    // Método run actualizado para aceptar el puerto como argumento
     public run(port: number) {
         const app = this.routes();
         app.listen(port);
         console.log(`🦊 Elysia is running at port ${port}`);
-    }
-}
-
-    async checkoutDevice(id: string): Promise<void> {
-        return this.deviceService.checkoutDevice(id)
     }
 }
