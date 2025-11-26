@@ -3,8 +3,8 @@
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node src/index.ts", // Usar ts-node o node directamente si compilas
-    "start": "ts-node src/index.ts" // Reemplazado de "bun run src/index.ts"
+    "dev": "ts-node src/index.ts", 
+    "start": "ts-node src/index.ts" 
   },
   "dependencies": {
     "@elysiajs/openapi": "^1.4.10",
@@ -16,7 +16,7 @@
   "devDependencies": {
     "bun-types": "latest",
     "drizzle-kit": "^0.31.4",
-    "ts-node": "^10.9.2",           // ¡Asegúrate de que ts-node esté aquí!
+    "ts-node": "^10.9.2",          
     "typescript": "^5.5.4"
   }
 }
