@@ -39,6 +39,6 @@ const app = new ElysiaApiAdapter(
 // 2. INICIAR LA APLICACIÓN
 app.run(SERVER_PORT) 
 
-// Mensaje de confirmación del puerto
-console.log(`El servidor esta corriendo en el puerto ${SERVER_PORT}.`);
+// La línea de console.log se elimina para evitar posibles conflictos de proceso 
+// al registrar una segunda inicialización del puerto.
 // En Azure, ESTA DEBE SER LA ÚNICA LÍNEA de inicio.
