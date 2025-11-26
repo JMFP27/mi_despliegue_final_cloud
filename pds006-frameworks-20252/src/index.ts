@@ -1,4 +1,5 @@
-import { ElysiaApiAdapter } from "./adapter/api/elysia";
+// 1. CORRECCIÓN DE IMPORTACIÓN: Se agrega '.ts' a la ruta para cumplir con el estándar ES Modules
+import { ElysiaApiAdapter } from "./adapter/api/elysia.ts"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
@@ -12,38 +13,37 @@ const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAUL
 
 // Base URL para llamadas internas. Fija a 8080 para consistencia en producción.
 // Se usa localhost ya que la llamada es interna dentro del mismo contenedor.
-const API_BASE_URL = `http://localhost:${SERVER_PORT}/api`; 
+const API_BASE_URL = `http://localhost:${SERVER_PORT}/api`; 
 
 const deviceRepository = new InMemoryDeviceRepository()
 const photoRepository = new FileSystemPhotoRepository()
 
 // Inyección de dependencias para los servicios
 const computerService = new ComputerService(
-    deviceRepository, 
-    photoRepository, 
-    // Usar la URL dinámica con el SERVER_PORT determinado
-    new URL(API_BASE_URL)
+    deviceRepository, 
+    photoRepository, 
+    // Usar la URL dinámica con el SERVER_PORT determinado
+    new URL(API_BASE_URL)
 )
 
 const deviceService = new DeviceService(deviceRepository)
 
 const medicalDeviceService = new MedicalDeviceService(
-    deviceRepository,
-    photoRepository
+    deviceRepository,
+    photoRepository
 )
 
 // Añadimos el tipado explícito para forzar al compilador a usar la definición correcta
 const app: ElysiaApiAdapter = new ElysiaApiAdapter(
-    computerService,
-    deviceService,
-    medicalDeviceService
+    computerService,
+    deviceService,
+    medicalDeviceService
 )
 
 // 2. INICIAR LA APLICACIÓN
-// FIX TS2339: Cambiamos 'app.run()' por 'app.listen()' ya que es el método estándar.
-// que utiliza Elysia (y probablemente el que está implementado en ElysiaApiAdapter).
-// Volvemos a pasar SERVER_PORT para asegurar que Elysia sepa dónde escuchar.
-app.run(SERVER_PORT);
+// FIX 1: Corregido el error de método de 'app.run(SERVER_PORT)' a 'app.listen(SERVER_PORT)'
+// FIX 2: La llamada a app.listen es ahora asíncrona, aunque 'ts-node' lo maneja.
+app.listen(SERVER_PORT);
 
-// El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
+// El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
 // en el log de Azure (puertos 3000 y 8080).
