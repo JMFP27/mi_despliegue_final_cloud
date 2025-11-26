@@ -1,5 +1,5 @@
-import { DeviceId, MedicalDevice } from '@core/domain'
-import { VALIDATION_SCHEMAS } from '@core/utils'
+import { DeviceId, MedicalDevice } from '../domain' // CORRECCIÓN: @core/domain cambiado a ruta relativa
+import { VALIDATION_SCHEMAS } from '../utils' // CORRECCIÓN: @core/utils cambiado a ruta relativa
 import * as z from 'zod'
 
 export const MED_DEVICE_REQUEST_SCHEMA = z.object({
