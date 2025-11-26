@@ -1,6 +1,6 @@
-import { Computer, DeviceCriteria, DeviceId, EnteredDevice, FrequentComputer, MedicalDevice } from "@/core/domain"
-import { SERVICE_ERRORS } from "@/core/service/error"
-import { DeviceRepository } from "@core/repository"
+import { Computer, DeviceCriteria, DeviceId, EnteredDevice, FrequentComputer, MedicalDevice } from "../../../core/domain" // Alias corregido
+import { SERVICE_ERRORS } from "../../../core/service/error" // Alias corregido
+import { DeviceRepository } from "../../../core/repository" // Alias corregido
 
 export class InMemoryDeviceRepository implements DeviceRepository {
   private frequentComputers = new Map<DeviceId, FrequentComputer>()
