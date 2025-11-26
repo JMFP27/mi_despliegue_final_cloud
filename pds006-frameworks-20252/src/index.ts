@@ -7,7 +7,8 @@ import { ComputerService, DeviceService, MedicalDeviceService } from "./core/ser
 // Se fija el puerto a 8080, ya que es el puerto obligatorio para Azure App Service.
 // Se usa process.env.PORT como fallback seguro, pero se prioriza 8080.
 const DEFAULT_AZURE_PORT = 8080;
-const SERVER_PORT = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
+// Se asegura que SERVER_PORT sea un número
+const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
 
 // Base URL para llamadas internas. Fija a 8080 para consistencia en producción.
 // Se usa localhost ya que la llamada es interna dentro del mismo contenedor.
@@ -30,14 +31,15 @@ const medicalDeviceService = new MedicalDeviceService(
     photoRepository
 )
 
-const app = new ElysiaApiAdapter(
+// Añadimos el tipado explícito para forzar al compilador a usar la definición correcta
+const app: ElysiaApiAdapter = new ElysiaApiAdapter(
     computerService,
     deviceService,
     medicalDeviceService
 )
 
 // 2. INICIAR LA APLICACIÓN
-// Nota: app.run() inicia el servidor. No incluimos console.log() para evitar conflictos de log.
+// Nota: app.run() inicia el servidor. 
 app.run(SERVER_PORT) 
 
 // El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
