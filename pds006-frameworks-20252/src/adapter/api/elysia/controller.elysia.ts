@@ -5,7 +5,8 @@ import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, Me
 import z from "zod";
 import { Computer, EnteredDevice, FrequentComputer, MedicalDevice } from "@/core/domain";
 
-export class Controller {
+// NOTA: Renombrado de 'Controller' a 'ElysiaApiAdapter' para coincidir con src/index.ts
+export class ElysiaApiAdapter {
     constructor(
         private computerService: ComputerService,
         private deviceService: DeviceService,
@@ -73,6 +74,8 @@ export class Controller {
             )
     }
 
+    // --- IMPLEMENTACIÓN DE LOS MÉTODOS ---
+
     async checkinComputer(request: ComputerRequest): Promise<Computer> {
         return this.computerService.checkinComputer(request)
     }
@@ -91,27 +94,36 @@ export class Controller {
 
     async getComputers(queryParams: CriteriaQueryParams): Promise<Computer[]> {
         const criteria = CriteriaHelper.parseFromQuery(queryParams)
-
         return this.computerService.getComputers(criteria)
     }
 
     async getMedicalDevices(queryParams: CriteriaQueryParams): Promise<MedicalDevice[]> {
         const criteria = CriteriaHelper.parseFromQuery(queryParams)
-
         return this.medicalDeviceService.getMedicalDevices(criteria)
     }
 
     async getFrequentComputers(queryParams: CriteriaQueryParams): Promise<FrequentComputer[]> {
         const criteria = CriteriaHelper.parseFromQuery(queryParams)
-
         return this.computerService.getFrequentComputers(criteria)
     }
 
     async getEnteredDevices(queryParams: CriteriaQueryParams): Promise<EnteredDevice[]> {
         const criteria = CriteriaHelper.parseFromQuery(queryParams)
-
         return this.deviceService.getEnteredDevices(criteria)
     }
+
+    async checkoutDevice(id: string): Promise<void> {
+        return this.deviceService.checkoutDevice(id)
+    }
+
+    // --- MÉTODO RUN CORREGIDO ---
+    // Este método recibe el puerto numérico y levanta el servidor.
+    public run(port: number) {
+        const app = this.routes();
+        app.listen(port);
+        console.log(`🦊 Elysia is running at port ${port}`);
+    }
+}
 
     async checkoutDevice(id: string): Promise<void> {
         return this.deviceService.checkoutDevice(id)
