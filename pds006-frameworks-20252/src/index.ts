@@ -1,6 +1,7 @@
-// 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Usamos la extensión .js para cumplir con el estricto estándar de Módulos ES (ERR_UNSUPPORTED_DIR_IMPORT). 
-// Esto le dice al runtime de Node.js exactamente qué archivo cargar (el archivo .ts compilado a .js).
-import { ElysiaApiAdapter } from "./adapter/api/elysia.js"; 
+// 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Revertimos a la importación sin extensión (p. ej., './elysia')
+// para satisfacer al compilador TypeScript y a ts-node, que lanza el error TS2307 cuando se usa .js o .ts.
+// Dejamos la importación sin extensión para eliminar el error TS2307.
+import { ElysiaApiAdapter } from "./adapter/api/elysia"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
@@ -42,7 +43,7 @@ const app: ElysiaApiAdapter = new ElysiaApiAdapter(
 )
 
 // 2. INICIAR LA APLICACIÓN
-// Se mantiene 'run(SERVER_PORT)' para satisfacer el tipado de la clase ElysiaApiAdapter (TS2339).
+// Se mantiene 'run(SERVER_PORT)' para satisfacer el tipado de la clase ElysiaApiAdapter.
 app.run(SERVER_PORT);
 
 // El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
