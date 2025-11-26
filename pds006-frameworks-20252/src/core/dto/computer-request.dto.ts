@@ -1,5 +1,5 @@
-import { Computer, DeviceId } from '@core/domain';
-import { VALIDATION_SCHEMAS } from '@core/utils';
+import { Computer, DeviceId } from '../domain'; // CORRECCIÓN: @core/domain cambiado a ruta relativa
+import { VALIDATION_SCHEMAS } from '../utils'; // CORRECCIÓN: @core/utils cambiado a ruta relativa
 import * as z from 'zod'
 
 export const COMPUTER_REQUEST_SCHEMA = z.object({
