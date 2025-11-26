@@ -1,4 +1,4 @@
-import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
+import { ComputerService, DeviceService, MedicalDeviceService } from "../../../core/service"; // CORRECCIÓN: Uso de rutas relativas en lugar de alias para resolver 'Cannot find module' en tiempo de ejecución (ts-node).
 import { ElysiaApiAdapter as RoutesController } from "./controller.elysia";
 import openapi from "@elysiajs/openapi";
 import Elysia from "elysia";
