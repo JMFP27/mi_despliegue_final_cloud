@@ -41,9 +41,9 @@ const app: ElysiaApiAdapter = new ElysiaApiAdapter(
 )
 
 // 2. INICIAR LA APLICACIÓN
-// FIX 1: Corregido el error de método de 'app.run(SERVER_PORT)' a 'app.listen(SERVER_PORT)'
-// FIX 2: La llamada a app.listen es ahora asíncrona, aunque 'ts-node' lo maneja.
-app.listen(SERVER_PORT);
+// FIX FINAL: Revertimos al método 'run(SERVER_PORT)'. 
+// El compilador de TypeScript (TS2339) exige que el método se llame 'run' en la clase ElysiaApiAdapter.
+app.run(SERVER_PORT);
 
 // El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
 // en el log de Azure (puertos 3000 y 8080).
