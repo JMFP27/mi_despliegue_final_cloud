@@ -11,7 +11,7 @@ const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : 8080;
 const API_BASE_URL = `http://localhost:${SERVER_PORT}/api`; 
 
 const deviceRepository = new InMemoryDeviceRepository()
-const photoRepository = new new FileSystemPhotoRepository()
+const photoRepository = new FileSystemPhotoRepository() // CORRECCIÓN: Se eliminó el "new" duplicado
 
 // Inyección de dependencias para los servicios
 const computerService = new ComputerService(
