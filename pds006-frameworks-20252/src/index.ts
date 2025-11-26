@@ -1,9 +1,10 @@
+import 'elysia/adapter/node';
+
 import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 
-// 1. DETERMINACIÓN DEL PUERTO (obligatorio en Azure)
 const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : 8080;
 
 const deviceRepository = new InMemoryDeviceRepository();
@@ -20,8 +21,7 @@ const medicalDeviceService = new MedicalDeviceService(deviceRepository, photoRep
 
 const adapter = new ElysiaApiAdapter(computerService, deviceService, medicalDeviceService);
 
-// 2. INICIAR EL SERVIDOR (¡esto es obligatorio en Azure!)
+// ✅ Ahora sí puedes usar .listen()
 adapter.app.listen(SERVER_PORT, () => {
-    console.log(`[Elysia] 🦊 Running at http://localhost:${SERVER_PORT}`);
-    console.log(`[App] Server listening on port ${SERVER_PORT}`);
+    console.log(`🦊 Elysia is running on port ${SERVER_PORT}`);
 });
