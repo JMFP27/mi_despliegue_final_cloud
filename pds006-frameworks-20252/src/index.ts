@@ -37,8 +37,8 @@ const app = new ElysiaApiAdapter(
 )
 
 // 2. INICIAR LA APLICACIÓN
+// Nota: app.run() inicia el servidor. No incluimos console.log() para evitar conflictos de log.
 app.run(SERVER_PORT) 
 
-// La línea de console.log se elimina para evitar posibles conflictos de proceso 
-// al registrar una segunda inicialización del puerto.
-// En Azure, ESTA DEBE SER LA ÚNICA LÍNEA de inicio.
+// El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
+// en el log de Azure (puertos 3000 y 8080).
