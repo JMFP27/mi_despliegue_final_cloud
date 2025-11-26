@@ -1,4 +1,4 @@
-import { DEFAULT_PAGINATION_LIMIT } from "@core/constants"
+import { DEFAULT_PAGINATION_LIMIT } from "../constants" // CORRECCIÓN: Alias @core/constants cambiado a ruta relativa
 
 export type DeviceCriteria = {
   sortBy?: DeviceSortQuery
@@ -22,4 +22,4 @@ export function newDeviceCriteria(): DeviceCriteria {
     limit: DEFAULT_PAGINATION_LIMIT,
     offset: 0
   }
-} 
+}
