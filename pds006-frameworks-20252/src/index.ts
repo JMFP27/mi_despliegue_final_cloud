@@ -36,25 +36,20 @@ const adapter = new ElysiaApiAdapter(
 
 // 2. INICIAR LA APLICACIÓN / EXPORTAR
 // Para solucionar el error "WebStandard does not support listen",
-// exportamos la instancia de Elysia para que el entorno de ejecución
-// de Node.js pueda iniciar el servidor correctamente (usando el adaptador de Node.js).
+// eliminamos la llamada explícita a 'listen()'. El runtime de Azure/ts-node
+// usará la exportación por defecto para iniciar el servidor.
 
+// /* BLOQUE ELIMINADO:
 // La aplicación se configura para escuchar el puerto 8080 antes de la exportación.
-adapter.app.listen(SERVER_PORT, () => {
-    // Este log de callback se sigue ejecutando una vez que el servidor se ha iniciado.
-    console.log(`[Elysia] 🦊 Running at ${adapter.app.server?.hostname}:${adapter.app.server?.port}`)
-    console.log(`[App] Server listening on port ${SERVER_PORT}`);
-});
+// adapter.app.listen(SERVER_PORT, () => {
+//     // Este log de callback se sigue ejecutando una vez que el servidor se ha iniciado.
+//     console.log(`[Elysia] 🦊 Running at ${adapter.app.server?.hostname}:${adapter.app.server?.port}`)
+//     console.log(`[App] Server listening on port ${SERVER_PORT}`);
+// });
+// */
 
-
-// Exportación final del objeto Elysia (aunque ya esté escuchando, algunos runtimes lo requieren)
-// export default adapter.app;
-
-// Nota: Dado que estás en Node.js (v22.20.0), la llamada a listen() DEBERÍA ser suficiente.
-// Si el error persiste, la solución más robusta en Elysia es exportar el fetch handler:
-
-// Desactivamos temporalmente el listen() y probamos la exportación fetch estándar de Elysia,
-// que es lo que el mensaje de error sugiere: "you might want to export default Elysia.fetch instead".
+// Exportación final del fetch handler de Elysia. 
+// Esta es la forma recomendada por el mensaje de error: "export default Elysia.fetch instead".
 export default { 
     fetch: adapter.app.fetch,
     port: SERVER_PORT
