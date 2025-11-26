@@ -39,4 +39,4 @@ const app = new ElysiaApiAdapter(
 app.run(SERVER_PORT) 
 
 // Después de este cambio y un nuevo despliegue, el log DEBERÍA mostrar:
-// "El servidor esta corriendo en el puerto 8080"
+// "El servidor esta corriendo en el puerto 8080."
