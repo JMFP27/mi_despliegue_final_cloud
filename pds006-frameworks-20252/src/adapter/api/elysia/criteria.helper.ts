@@ -1,4 +1,4 @@
-import { DeviceCriteria, DeviceFilterQuery, DeviceSortQuery, newDeviceCriteria } from '../../../core/domain' // CORRECCIÓN: Uso de ruta relativa. Subimos 3 niveles: .. / .. / .. / core / domain
+import { DeviceCriteria, DeviceFilterQuery, DeviceSortQuery, newDeviceCriteria } from '../../../core/domain' // 🎯 CORRECCIÓN 1: Ruta relativa para resolver el error de alias (@/).
 import * as z from 'zod'
 
 const QUERY_PARAM_KEYS_SCHEMA = z.union([
@@ -19,17 +19,14 @@ export class CriteriaHelper {
     const criteria = newDeviceCriteria()
 
     for (const key in queryParams) {
-      // Nota: El uso de 'queryParams[`filter[]`]' y 'queryParams["sort"]' 
-      // dentro del bucle 'for...in' parece incorrecto. 
-      // Deberías usar 'key' para determinar qué parámetro estás parseando 
-      // y 'queryParams[key]' para obtener el valor, pero mantendré tu lógica original 
-      // por ahora, solo corrigiendo el error de importación.
+      // 🎯 CORRECCIÓN 2: Aserción de tipo para resolver TS7053.
+      const paramValue = queryParams[key as keyof CriteriaQueryParams];
       
       // Asumiendo que quieres iterar sobre los filtros y el orden
       if (key.startsWith("filter")) {
-        criteria.filterBy = this.parseFilterFromEntry(key, queryParams[key])
+        criteria.filterBy = this.parseFilterFromEntry(key, paramValue)
       } else if (key === "sort") {
-        criteria.sortBy = this.parseSortFromEntry(key, queryParams[key])
+        criteria.sortBy = this.parseSortFromEntry(key, paramValue)
       }
       // Ignorando limit/offset en este loop, ya que no se usan actualmente.
     }
@@ -91,3 +88,4 @@ export class CriteriaHelper {
     }
   }
 }
+```eof
