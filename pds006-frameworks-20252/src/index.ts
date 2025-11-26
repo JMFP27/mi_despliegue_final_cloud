@@ -17,6 +17,7 @@ const API_BASE_URL = `http://localhost:${SERVER_PORT}/api`;
 const deviceRepository = new InMemoryDeviceRepository()
 const photoRepository = new FileSystemPhotoRepository()
 
+// Inyección de dependencias para los servicios
 const computerService = new ComputerService(
     deviceRepository, 
     photoRepository, 
@@ -39,7 +40,9 @@ const app: ElysiaApiAdapter = new ElysiaApiAdapter(
 )
 
 // 2. INICIAR LA APLICACIÓN
-// Nota: app.run() inicia el servidor. 
+// FIX TS2339: Cambiamos 'app.run()' por 'app.listen()' ya que es el método estándar
+// que utiliza Elysia (y probablemente el que está implementado en ElysiaApiAdapter).
+// Volvemos a pasar SERVER_PORT para asegurar que Elysia sepa dónde escuchar.
 app.listen(SERVER_PORT) 
 
 // El código se ha limpiado de cualquier console.log() para evitar la doble inicialización 
