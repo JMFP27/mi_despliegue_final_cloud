@@ -17,7 +17,8 @@
     "@elysiajs/cors": "^1.0.2",
     "@elysiajs/swagger": "^1.0.2", 
     "@sinclair/typebox": "^0.34.0",
-    "elysia": "^1.4.16"
+    "elysia": "^1.4.16",
+    "@elysiajs/openapi": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
