@@ -1,4 +1,4 @@
-import { ErrorBase } from "@core/utils";
+import { ErrorBase } from "../../utils"; // Alias corregido: sube un nivel de 'service' a 'core' y entra a 'utils'
 
 type ServiceErrorName =
   | 'DEVICE_NOT_FOUND'
