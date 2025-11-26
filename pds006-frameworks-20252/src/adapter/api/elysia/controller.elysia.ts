@@ -1,9 +1,9 @@
-import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
+import { ComputerService, DeviceService, MedicalDeviceService } from "../../../core/service"; // CORRECCIÓN: Rutas relativas
 import Elysia from "elysia";
 import { CRITERIA_QUERY_PARAMS_SCHEMA, CriteriaHelper, CriteriaQueryParams } from "./criteria.helper";
-import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "@/core/dto";
+import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "../../../core/dto"; // CORRECCIÓN: Rutas relativas
 import z from "zod";
-import { Computer, EnteredDevice, FrequentComputer, MedicalDevice } from "@/core/domain";
+import { Computer, EnteredDevice, FrequentComputer, MedicalDevice } from "../../../core/domain"; // CORRECCIÓN: Rutas relativas
 
 // Se ha cambiado el nombre de la clase a ElysiaApiAdapter para coincidir con la importación en src/index.ts
 export class ElysiaApiAdapter {
@@ -45,19 +45,19 @@ export class ElysiaApiAdapter {
             )
             .get(
                 "/computers",
-                ({ query }) => this.getComputers(query)
+                ({ query }) => this.getComputers(query as CriteriaQueryParams)
             )
             .get(
                 "/medicaldevices",
-                ({ query }) =>  this.getMedicalDevices(query)
+                ({ query }) =>  this.getMedicalDevices(query as CriteriaQueryParams)
             )
             .get(
                 "/computers/frequent",
-                ({ query }) => this.getFrequentComputers(query)
+                ({ query }) => this.getFrequentComputers(query as CriteriaQueryParams)
             )
             .get(
                 "/devices/entered",
-                ({ query }) => this.getEnteredDevices(query)
+                ({ query }) => this.getEnteredDevices(query as CriteriaQueryParams)
             )
             .guard({
                 params: z.object({
