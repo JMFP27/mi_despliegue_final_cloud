@@ -1,6 +1,6 @@
 // 1. CORRECCIÓN DE IMPORTACIÓN FINAL: Cambiamos la extensión a .ts para que ts-node resuelva correctamente el archivo fuente.
 // La ruta es: "./adapter/api/elysia/elysia.api.ts"
-import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api.ts"; 
+import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
