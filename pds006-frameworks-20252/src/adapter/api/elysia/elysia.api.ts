@@ -1,10 +1,13 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
-import { Controller } from "./controller.elysia";
+// CORRECCIÓN CLAVE: Importamos 'ElysiaApiAdapter' (el nombre real exportado) 
+// y le damos un alias local de 'RoutesController' para evitar el error TS2305.
+import { ElysiaApiAdapter as RoutesController } from "./controller.elysia";
 import openapi from "@elysiajs/openapi";
 import Elysia from "elysia";
 
 export class ElysiaApiAdapter {
-    private controller: Controller;
+    // Usamos el nuevo nombre de tipo
+    private controller: RoutesController;
     public app: Elysia;
 
     constructor(
@@ -12,7 +15,8 @@ export class ElysiaApiAdapter {
         deviceService: DeviceService,
         medicalDeviceService: MedicalDeviceService
     ) {
-        this.controller = new Controller(
+        // Usamos el nuevo nombre para la instanciación
+        this.controller = new RoutesController(
             computerService,
             deviceService,
             medicalDeviceService
