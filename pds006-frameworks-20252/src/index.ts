@@ -1,5 +1,5 @@
-// 1. CORRECCIÓN DE IMPORTACIÓN: Se agrega '.ts' a la ruta para cumplir con el estándar ES Modules
-import { ElysiaApiAdapter } from "./adapter/api/elysia.ts"; 
+// 1. CORRECCIÓN DE IMPORTACIÓN: Se revierte la ruta de importación para que el compilador TypeScript (ts-node) pueda resolver el módulo correctamente.
+import { ElysiaApiAdapter } from "./adapter/api/elysia"; 
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
