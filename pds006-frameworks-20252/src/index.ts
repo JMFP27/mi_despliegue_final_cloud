@@ -71,8 +71,9 @@ const server = http.createServer(async (req, res) => {
             method: req.method,
             // Las cabeceras de Node.js se pueden pasar directamente al constructor de Headers
             headers: new Headers(req.headers as Record<string, string>), 
-            // FIX TS2322: Convertimos el Buffer a Uint8Array para asegurar la compatibilidad de tipado con BodyInit
-            body: body ? (body as Uint8Array) : undefined, 
+            // FIX TS2322: Casteamos a 'any' antes de pasarlo como 'BodyInit' para evitar conflictos de tipado estricto
+            // entre las definiciones de Buffer/Uint8Array de Node.js y la Web API.
+            body: body ? (body as any) : undefined, 
             // Parámetro requerido por Elysia en algunos contextos de Node.js
             duplex: 'half' as any 
         });
