@@ -1,11 +1,11 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
-import Controller from "./controller.elysia";
-import openapi from "@elysiajs/openapi";
+import { Controller } from "./controller.elysia";
+// import openapi from "@elysiajs/openapi"; // <--- ESTA LÍNEA DEBE SER ELIMINADA
 import Elysia from "elysia";
 
 export class ElysiaApiAdapter {
-    private controller: Controller;
-    public app: Elysia;
+    private controller: Controller
+    public app: Elysia // Mantenemos la aplicación Elysia pública
 
     constructor(
         computerService: ComputerService,
@@ -16,18 +16,10 @@ export class ElysiaApiAdapter {
             computerService,
             deviceService,
             medicalDeviceService
-        );
+        )
 
-        // Paso 1: crea la app base
-        const app = new Elysia();
-
-        // Paso 2: agrega OpenAPI
-        app.use(openapi({}));
-
-        // Paso 3: agrega las rutas (sin .group si no es necesario, o con .group pero sin encadenar tipos complejos)
-        const router = this.controller.routes(); // esto devuelve una instancia de Elysia
-        app.use(router); // ts-node + Elysia v1+ maneja esto bien
-
-        this.app = app;
+        this.app = new Elysia({ prefix: '/api' }) // Re-añadido el prefijo '/api' para la consistencia
+            // .use(openapi({})) // Ya fue eliminado del constructor
+            .use(this.controller.routes())
     }
 }
