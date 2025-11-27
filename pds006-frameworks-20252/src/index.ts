@@ -38,16 +38,15 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
-// FIX PRINCIPAL: Inicializamos la app, pero no la encadenamos inmediatamente.
-let app = new Elysia() as Elysia<any>; // Cast inmediato para asegurar el tipo base.
+// Dejamos que TS infiera el tipo base para el app principal.
+let app = new Elysia();
 
 // *** 2A. MANEJADORES DE ERRORES GLOBALES (Configuración separada) ***
 
-// FIX TS2339: Aplicamos notFound y onError directamente a la variable 'app' tipada.
-// Usamos la firma completa del manejador para el contexto.
-
+// FIX TS2339: Usamos @ts-ignore para evitar el error de inferencia de tipo conocido en Elysia.
 // 1. Manejador explícito de rutas no encontradas (404)
-app.notFound((context: Context) => { // FIX TS7006: Tipado explícito de 'context'
+// @ts-ignore
+app.notFound((context: Context) => { 
     context.set.status = 404;
     console.log("NOT_FOUND (404): Route requested does not exist.");
     return {
@@ -57,8 +56,11 @@ app.notFound((context: Context) => { // FIX TS7006: Tipado explícito de 'contex
 });
 
 // 2. Manejador de errores interno (e.g., errores de código 500)
-app.onError((context: ErrorContext) => { // FIX TS2339: Tipado como ErrorContext
-    const { error, set } = context; // Desestructuración segura
+// @ts-ignore
+app.onError((context) => {
+    // FIX TS2339 (Property 'error'): Casting el contexto a ErrorContext dentro del handler
+    // para asegurar que 'error' y 'set' existan.
+    const { error, set } = context as ErrorContext; 
     set.status = 500;
     
     const err = error as unknown as Error; 
@@ -79,10 +81,13 @@ app
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
     // Agrupación de la API
-    .group('/api', (group: Elysia<any>) => group.use(adapter.app))
+    // FIX TS2345: Removemos la anotación Elysia<any> para que TS infiera el tipo de grupo correctamente,
+    // que incluye el prefijo '/api', resolviendo el error de incompatibilidad.
+    .group('/api', (group) => group.use(adapter.app))
 
 
 // 3. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
+// Tipamos la aplicación aquí como Elysia<any> para simplicidad.
 const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
     return async (req: IncomingMessage, res: ServerResponse) => {
         try {
@@ -144,7 +149,8 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
-const server = createServer(createWebFetchHandler(app))
+// Forzamos el tipo de 'app' a Elysia<any> aquí para el adaptador.
+const server = createServer(createWebFetchHandler(app as Elysia<any>)) 
 
 // 5. Forzar al servidor a escuchar el puerto requerido por Azure.
 server.listen(SERVER_PORT, () => {
