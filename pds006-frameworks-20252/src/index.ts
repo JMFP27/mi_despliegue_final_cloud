@@ -37,7 +37,9 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
-// El cast 'as Elysia<any>' debe estar al final de la cadena de métodos para ser sintácticamente válido.
+// CORRECCIÓN: El cast 'as Elysia<any>' se aplica inmediatamente después de la última llamada
+// encadenada (.group(...)) para formar una expresión válida de una sola línea,
+// eliminando el error TS1434.
 const app = new Elysia()
     
     // 2A. MANEJADOR DE ERRORES INTERNO (500)
@@ -70,11 +72,7 @@ const app = new Elysia()
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
     // Agrupación de la API.
-    // Usamos el tipo inferido para 'group' para mayor robustez en la cadena.
-    .group('/api', (group) => group.use(adapter.app))
-
-    // Forzamos el tipo final a Elysia<any> para compatibilidad con el servidor Node.js
-    as Elysia<any>
+    .group('/api', (group) => group.use(adapter.app)) as Elysia<any>
 
 
 // 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
