@@ -55,9 +55,10 @@ const app = new Elysia()
     })
 
     // 2B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    // FIX TS2339: Usamos la desestructuración para un mejor flujo de tipos en Elysia.
-    .notFound(({ set }) => { 
-        set.status = 404;
+    // FIX TS7031/TS2339: Tipado explícito con (context: Context) para estabilizar el tipo de la cadena
+    // y evitar el error 'implicit any'.
+    .notFound((context: Context) => { 
+        context.set.status = 404;
         console.log("NOT_FOUND (404): Route requested does not exist.");
         return {
             error: true,
@@ -70,7 +71,7 @@ const app = new Elysia()
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
     // Agrupación de la API.
-    // FIX TS7006: Tipado explícito de 'group' como Elysia<any>.
+    // Tipado explícito de 'group' como Elysia<any>.
     .group('/api', (group: Elysia<any>) => group.use(adapter.app)) as Elysia<any>
 
 
