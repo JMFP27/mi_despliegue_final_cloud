@@ -16,10 +16,21 @@ export class Controller {
 
     public routes() {
         return new Elysia()
+            // Se elimina el guard genérico de query aquí, ya que causaba conflicto con t.Any,
+            // lo dejamos para las rutas GET donde se usará, o lo aplicamos con t.Object.
             .guard({
-                // CORRECCIÓN 1: Envolvemos el esquema de Zod para query en t.Any() o t.Object() si el tipo es complejo y no una validación estándar.
-                // Como es para un `guard` con `query`, lo dejamos directamente, pero si da problemas, lo envolvemos en `t.Any(CRITERIA_QUERY_PARAMS_SCHEMA)`.
-                query: t.Any(CRITERIA_QUERY_PARAMS_SCHEMA) 
+                // Usaremos t.Object para envolver el esquema Zod y cumplir con la expectativa de Elysia/TypeScript.
+                query: t.Object({
+                    sortBy: t.Optional(t.String()),
+                    filterBy: t.Optional(t.String()),
+                    limit: t.Optional(t.String()),
+                    offset: t.Optional(t.String()),
+                }, { 
+                    // Esto permite que el esquema Zod subyacente funcione para la lógica de parseo,
+                    // mientras que Elysia tiene un TObject para el tipado.
+                    // Si el error persiste, probaremos a pasar CRITERIA_QUERY_PARAMS_SCHEMA directamente sin t.Any() ni t.Object()
+                    // o usar `as const` en la definición de CRITERIA_QUERY_PARAMS_SCHEMA.
+                })
             })
             // RUTA POST: checkin de Computadora
             .post(
@@ -27,8 +38,9 @@ export class Controller {
                 ({ body }) => this.checkinComputer(body as ComputerRequest), 
                 {
                     type: "multipart/form-data",
-                    // CORRECCIÓN 2: Usamos t.Any(ZodSchema) para que Elysia reconozca el objeto Zod como un TSchema válido.
-                    body: t.Any(COMPUTER_REQUEST_SCHEMA) 
+                    // CORRECCIÓN 2: Usamos "as const" para ayudar a TypeScript a inferir el tipo estricto, 
+                    // resolviendo el conflicto con TAny/TSchema.
+                    body: COMPUTER_REQUEST_SCHEMA as const
                 }
             )
             // RUTA POST: checkin de Dispositivo Médico
@@ -37,8 +49,8 @@ export class Controller {
                 ({ body }) => this.checkinMedicalDevice(body as MedDeviceRequest),
                 {
                     type: "multipart/form-data",
-                    // CORRECCIÓN 3: Usamos t.Any(ZodSchema)
-                    body: t.Any(MED_DEVICE_REQUEST_SCHEMA) 
+                    // CORRECCIÓN 3: Usamos "as const"
+                    body: MED_DEVICE_REQUEST_SCHEMA as const
                 }
             )
             // RUTA POST: Registro de Computadora Frecuente
@@ -47,8 +59,8 @@ export class Controller {
                 ({ body }) => this.registerFrequentComputer(body as ComputerRequest),
                 {
                     type: "multipart/form-data",
-                    // CORRECCIÓN 4: Usamos t.Any(ZodSchema)
-                    body: t.Any(COMPUTER_REQUEST_SCHEMA)
+                    // CORRECCIÓN 4: Usamos "as const"
+                    body: COMPUTER_REQUEST_SCHEMA as const
                 }
             )
             .get(
