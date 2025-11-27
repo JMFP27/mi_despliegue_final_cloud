@@ -14,7 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "elysia": "^1.0.26",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@elysiajs/adapter-node": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
