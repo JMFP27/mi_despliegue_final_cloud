@@ -36,51 +36,53 @@ const adapter = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
-// FIX TS2339: La aserción de tipo 'as Elysia<any>' se aplica a toda la expresión
-// para forzar al compilador a reconocer que el objeto final incluye .notFound.
-const app = (new Elysia()
+/**
+ * Encapsula la construcción de la aplicación Elysia.
+ * Forzar el tipo de retorno ayuda a TypeScript a no perder los métodos base como .notFound.
+ */
+function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
+    // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES
+    return new Elysia()
 
-    // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    .notFound((context: Context) => { 
-        context.set.status = 404;
-        console.log("NOT_FOUND (404): Route requested does not exist.");
-        return {
-            error: true,
-            message: "Route Not Found",
-        };
-    })
+        // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+        .notFound((context: Context) => { 
+            context.set.status = 404;
+            console.log("NOT_FOUND (404): Route requested does not exist.");
+            return {
+                error: true,
+                message: "Route Not Found",
+            };
+        })
 
-    // 2B. MANEJADOR DE ERRORES INTERNO (500)
-    // El tipado con (context: Context & { error: unknown }) ya resolvió el error TS7031.
-    .onError((context: Context & { error: unknown }) => {
-        context.set.status = 500;
+        // 2B. MANEJADOR DE ERRORES INTERNO (500)
+        .onError((context: Context & { error: unknown }) => {
+            context.set.status = 500;
+            
+            const err = context.error as Error; 
+
+            console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
+            
+            return {
+                error: true,
+                message: `Internal Server Error: ${err.name}`,
+                trace: err.message
+            };
+        })
+
+
+        // 3. DEFINICIÓN DE RUTAS Y GRUPOS 
+        // Ruta de health check.
+        .get('/', () => 'PDS006 San Rafael API running OK.')
         
-        // Accedemos al error.
-        const err = context.error as Error; 
+        // Agrupación de la API. El tipado se maneja en el retorno de la función.
+        .group('/api', (group) => group.use(adapter.app));
+}
 
-        console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
-        
-        return {
-            error: true,
-            message: `Internal Server Error: ${err.name}`,
-            trace: err.message
-        };
-    })
-
-
-    // 3. DEFINICIÓN DE RUTAS Y GRUPOS 
-    // Ruta de health check.
-    .get('/', () => 'PDS006 San Rafael API running OK.')
-    
-    // Agrupación de la API.
-    .group('/api', (group: Elysia<any>) => group.use(adapter.app))
-
-) as Elysia<any> // <-- Aserción forzada de tipo aquí.
+// 2. Construir la aplicación usando la función encapsulada
+const app = buildElysiaApp(adapter);
 
 
 // 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
-// Usamos Elysia<any> para la firma de la función.
 const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
     return async (req: IncomingMessage, res: ServerResponse) => {
         try {
