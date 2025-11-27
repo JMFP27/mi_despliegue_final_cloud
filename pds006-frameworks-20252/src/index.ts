@@ -37,10 +37,11 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
-const app = new Elysia()
+// FIX TS2339: Declaramos app con el tipo Elysia<any> para asegurar que TypeScript
+// reconozca los métodos globales (.notFound, .onError) a lo largo de la cadena.
+const app: Elysia<any> = new Elysia()
 
     // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    // El tipado explícito con (context: Context) ayuda a la inferencia.
     .notFound((context: Context) => { 
         context.set.status = 404;
         console.log("NOT_FOUND (404): Route requested does not exist.");
@@ -51,12 +52,11 @@ const app = new Elysia()
     })
 
     // 2B. MANEJADOR DE ERRORES INTERNO (500)
-    // FIX TS7031: Usamos el objeto completo 'context' tipado como Context & { error: unknown }
-    // para evitar el error 'implicit any' en la desestructuración de { error, set }.
+    // El tipado con (context: Context & { error: unknown }) resuelve el error TS7031 anterior.
     .onError((context: Context & { error: unknown }) => {
         context.set.status = 500;
         
-        // Accedemos al error y lo casteamos.
+        // Accedemos al error.
         const err = context.error as Error; 
 
         console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
@@ -73,9 +73,8 @@ const app = new Elysia()
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
-    // Agrupación de la API.
-    // Tipado explícito de 'group' como Elysia<any>.
-    .group('/api', (group: Elysia<any>) => group.use(adapter.app)) as Elysia<any>
+    // Agrupación de la API. No necesitamos 'as Elysia<any>' al final si 'app' ya está tipado.
+    .group('/api', (group: Elysia<any>) => group.use(adapter.app)) 
 
 
 // 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
