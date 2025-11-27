@@ -3,7 +3,8 @@ import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 // Importamos Context, ErrorContext y la inferencia de tipos de Elysia para mayor precisión.
-import Elysia, { Context, ErrorContext, Handler } from "elysia"; 
+// Notar que la importación de 'Elysia' no tiene genéricos para simplificar la inicialización.
+import Elysia, { Context, ErrorContext } from "elysia"; 
 // Importamos los módulos HTTP nativo y Stream de Node.js, necesarios para la compatibilidad con Azure.
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -38,14 +39,20 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
-const app = new Elysia()
+let app = new Elysia()
 
-    // *** 2A. MANEJADORES DE ERRORES GLOBALES (ORDEN INVERTIDO PARA TIPADO) ***
+// FIX: Forzamos el tipo de 'app' a Elysia<any> inmediatamente. Esto garantiza que 
+// TypeScript reconozca todos los métodos base (.notFound, .onError) a pesar 
+// de la compleja inferencia de tipos durante el encadenamiento.
+const baseApp = app as Elysia<any>
+
+baseApp
+    // *** 2A. MANEJADORES DE ERRORES GLOBALES ***
 
     // 1. Manejador explícito de rutas no encontradas (404)
-    // Fix TS2339 y TS7006: Colocar primero y tipar explícitamente el contexto.
-    .notFound(({ set }: Parameters<Handler<any, any>>[0] & Context) => { 
-        set.status = 404;
+    // Usamos el tipo Context estándar, lo que resuelve el TS7006.
+    .notFound((context: Context) => { 
+        context.set.status = 404;
         console.log("NOT_FOUND (404): Route requested does not exist.");
         return {
             error: true,
@@ -54,7 +61,10 @@ const app = new Elysia()
     })
 
     // 2. Manejador de errores interno (e.g., errores de código 500)
-    .onError(({ error, set }: Parameters<Handler<any, any>>[0] & ErrorContext) => {
+    // Usamos la firma simple de handler y forzamos el tipo a ErrorContext dentro.
+    .onError((context) => {
+        // Cast el contexto a ErrorContext para asegurar que las propiedades 'error' y 'set' existan (Fix TS2339).
+        const { error, set } = context as ErrorContext;
         set.status = 500;
         
         const err = error as unknown as Error; 
@@ -139,8 +149,8 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
-// Hacemos un cast final a Elysia<any> para la función createWebFetchHandler que espera ese tipo.
-const server = createServer(createWebFetchHandler(app as Elysia<any>))
+// Usamos baseApp, que ya está tipada correctamente como Elysia<any>.
+const server = createServer(createWebFetchHandler(baseApp))
 
 // 5. Forzar al servidor a escuchar el puerto requerido por Azure.
 server.listen(SERVER_PORT, () => {
