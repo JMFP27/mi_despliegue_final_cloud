@@ -37,9 +37,6 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
-// CORRECCIÓN: El cast 'as Elysia<any>' se aplica inmediatamente después de la última llamada
-// encadenada (.group(...)) para formar una expresión válida de una sola línea,
-// eliminando el error TS1434.
 const app = new Elysia()
     
     // 2A. MANEJADOR DE ERRORES INTERNO (500)
@@ -58,8 +55,9 @@ const app = new Elysia()
     })
 
     // 2B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    .notFound((context: Context) => { 
-        context.set.status = 404;
+    // FIX TS2339: Usamos la desestructuración para un mejor flujo de tipos en Elysia.
+    .notFound(({ set }) => { 
+        set.status = 404;
         console.log("NOT_FOUND (404): Route requested does not exist.");
         return {
             error: true,
@@ -72,7 +70,8 @@ const app = new Elysia()
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
     // Agrupación de la API.
-    .group('/api', (group) => group.use(adapter.app)) as Elysia<any>
+    // FIX TS7006: Tipado explícito de 'group' como Elysia<any>.
+    .group('/api', (group: Elysia<any>) => group.use(adapter.app)) as Elysia<any>
 
 
 // 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
