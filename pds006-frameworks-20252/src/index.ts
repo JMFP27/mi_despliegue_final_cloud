@@ -67,16 +67,18 @@ const server = http.createServer(async (req, res) => {
         }
 
         // 2. Crear el objeto Request de la Web API
+        // FIX TS2353: Casteamos la configuración completa a 'any' para permitir la propiedad 'duplex',
+        // que es necesaria para la compatibilidad con streams de Node.js en el constructor de Request,
+        // pero que no está en las definiciones de RequestInit estándar de TypeScript.
         const request = new Request(fullUrl, {
             method: req.method,
             // Las cabeceras de Node.js se pueden pasar directamente al constructor de Headers
             headers: new Headers(req.headers as Record<string, string>), 
-            // FIX TS2322: Casteamos a 'any' antes de pasarlo como 'BodyInit' para evitar conflictos de tipado estricto
-            // entre las definiciones de Buffer/Uint8Array de Node.js y la Web API.
+            // FIX TS2322 (previa): Casteamos el body a 'any' para evitar conflictos de tipado con Buffer
             body: body ? (body as any) : undefined, 
             // Parámetro requerido por Elysia en algunos contextos de Node.js
-            duplex: 'half' as any 
-        });
+            duplex: 'half', 
+        } as any); // <--- CORRECCIÓN APLICADA AQUÍ
 
         // 3. Obtener la respuesta de Elysia
         // Usamos await para resolver la Promise y obtenemos el objeto Response (Web API)
