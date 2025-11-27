@@ -14,7 +14,7 @@
   "dependencies": {
     "elysia": "^0.8.17",
     "zod": "^3.22.4",
-    "@elysiajs/openapi": "^0.8.0"
+    "@elysiajs/openapi": "^0.8.17"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
