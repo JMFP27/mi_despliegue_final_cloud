@@ -2,7 +2,9 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-import Elysia from "elysia"; // Importación necesaria
+import Elysia from "elysia";
+// IMPORTACIÓN REQUERIDA PARA EJECUTAR ELYSIA EN NODE.JS
+import * as http from 'http'; 
 
 // 1. DETERMINACIÓN DEL PUERTO
 // Se fija el puerto a 8080, ya que es el puerto obligatorio para Azure App Service.
@@ -41,9 +43,50 @@ const adapter = new ElysiaApiAdapter(
 const app = new Elysia()
     .group('/api', (group) => group.use(adapter.app)) // Aplicamos el prefijo '/api' al grupo de rutas
 
-// 3. INICIAR LA APLICACIÓN
-app.listen(SERVER_PORT, () => {
+// 3. INICIAR LA APLICACIÓN DE FORMA COMPATIBLE CON NODE.JS
+const server = http.createServer((req, res) => {
+    // Usamos app.fetch para delegar la petición y la respuesta a Elysia
+    app.fetch(req, {
+        request: req,
+        server: server,
+        // Eliminamos el log de inicio de app.listen ya que Node.js lo maneja.
+    }).then(response => {
+        // Transferir los encabezados de respuesta
+        response.headers.forEach((value, key) => {
+            res.setHeader(key, value);
+        });
+        
+        // Escribir el código de estado y el cuerpo de la respuesta
+        res.writeHead(response.status);
+        if (response.body) {
+            response.body.pipeTo(new WritableStream({
+                write(chunk) {
+                    res.write(chunk);
+                },
+                close() {
+                    res.end();
+                },
+                abort(err) {
+                    console.error('Stream aborted', err);
+                    res.end();
+                }
+            })).catch(err => {
+                console.error("Error piping response body:", err);
+                res.end();
+            });
+        } else {
+            res.end();
+        }
+    }).catch(err => {
+        console.error("Error processing request:", err);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal Server Error');
+    });
+});
+
+
+server.listen(SERVER_PORT, () => {
     // Añadimos logs para confirmar el inicio.
-    console.log(`[Elysia] 🦊 Running at ${app.server?.hostname}:${app.server?.port}`)
+    console.log(`[Elysia] 🦊 Running compatible on Node.js at http://localhost:${SERVER_PORT}`)
     console.log(`[App] Server listening on port ${SERVER_PORT}`);
 });
