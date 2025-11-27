@@ -1,22 +1,24 @@
 {
   "name": "pds006sanrafael",
-  "version": "1.0.50", 
-  "description": "Project for PDS006 frameworks",
+  "version": "1.0.50",
+  "description": "",
   "main": "dist/index.js",
   "scripts": {
+    "start": "node dist/index.js",
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node dist/index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "elysia": "^0.8.17",
-    "zod": "^3.22.4"
+    "@elysiajs/server": "^1.0.1",
+    "elysia": "^1.0.26",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.11.24",
-    "typescript": "^5.3.3"
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
   }
 }
