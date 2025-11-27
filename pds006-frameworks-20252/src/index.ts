@@ -38,22 +38,15 @@ const adapter = new ElysiaApiAdapter(
 
 /**
  * Encapsula la construcción de la aplicación Elysia.
- * Forzar el tipo de retorno ayuda a TypeScript a no perder los métodos base como .notFound.
+ * Forzamos el tipo inmediatamente después de la instanciación para evitar que TypeScript
+ * pierda los métodos base como .notFound y .onError.
  */
 function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
+    // Forzar la aserción de tipo inmediatamente para establecer la base.
+    const app = new Elysia() as Elysia<any>;
+
     // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES
-    return new Elysia()
-
-        // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-        .notFound((context: Context) => { 
-            context.set.status = 404;
-            console.log("NOT_FOUND (404): Route requested does not exist.");
-            return {
-                error: true,
-                message: "Route Not Found",
-            };
-        })
-
+    return app
         // 2B. MANEJADOR DE ERRORES INTERNO (500)
         .onError((context: Context & { error: unknown }) => {
             context.set.status = 500;
@@ -69,13 +62,23 @@ function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
             };
         })
 
+        // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+        // El error TS2339 debería estar resuelto gracias a la aserción de tipo en 'app'.
+        .notFound((context: Context) => { 
+            context.set.status = 404;
+            console.log("NOT_FOUND (404): Route requested does not exist.");
+            return {
+                error: true,
+                message: "Route Not Found",
+            };
+        })
 
         // 3. DEFINICIÓN DE RUTAS Y GRUPOS 
         // Ruta de health check.
         .get('/', () => 'PDS006 San Rafael API running OK.')
         
-        // Agrupación de la API. El tipado se maneja en el retorno de la función.
-        .group('/api', (group) => group.use(adapter.app));
+        // Agrupación de la API. Tipamos 'group' explícitamente para resolver TS7006.
+        .group('/api', (group: Elysia<any>) => group.use(adapter.app));
 }
 
 // 2. Construir la aplicación usando la función encapsulada
