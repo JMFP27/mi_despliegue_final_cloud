@@ -38,13 +38,22 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
-// Inicializamos la app sin un generic complejo, dejando que TypeScript infiera el resto.
 const app = new Elysia()
 
-    // *** 2A. MANEJADORES DE ERRORES GLOBALES (Colocados ANTES de las rutas) ***
+    // *** 2A. MANEJADORES DE ERRORES GLOBALES (ORDEN INVERTIDO PARA TIPADO) ***
 
-    // FIX TS2339 & TS7006: Tipamos el argumento del handler usando el generic Handler<any, any> 
-    // y desestructurando directamente, forzando la compatibilidad de tipos para ErrorContext.
+    // 1. Manejador explícito de rutas no encontradas (404)
+    // Fix TS2339 y TS7006: Colocar primero y tipar explícitamente el contexto.
+    .notFound(({ set }: Parameters<Handler<any, any>>[0] & Context) => { 
+        set.status = 404;
+        console.log("NOT_FOUND (404): Route requested does not exist.");
+        return {
+            error: true,
+            message: "Route Not Found",
+        };
+    })
+
+    // 2. Manejador de errores interno (e.g., errores de código 500)
     .onError(({ error, set }: Parameters<Handler<any, any>>[0] & ErrorContext) => {
         set.status = 500;
         
@@ -58,24 +67,13 @@ const app = new Elysia()
             trace: err.message
         };
     })
-
-    // FIX TS2339 & TS7006: Hacemos lo mismo para notFound, usando el generic Handler<any, any> 
-    // y desestructurando directamente, forzando la compatibilidad de tipos para Context.
-    .notFound(({ set }: Parameters<Handler<any, any>>[0] & Context) => { 
-        set.status = 404;
-        console.log("NOT_FOUND (404): Route requested does not exist.");
-        return {
-            error: true,
-            message: "Route Not Found",
-        };
-    })
     
     // *** 2B. DEFINICIÓN DE RUTAS ***
 
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
-    // FIX TS7006: Tipamos explícitamente el parámetro 'group' con la app base de Elysia.
+    // Fix TS7006: Tipamos explícitamente el parámetro 'group'.
     .group('/api', (group: Elysia<any>) => group.use(adapter.app))
 
 
