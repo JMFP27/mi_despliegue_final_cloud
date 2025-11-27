@@ -2,7 +2,7 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos Context y Elysia para el tipado explícito.
+// Importamos Context y Elysia para el tipado.
 import Elysia, { Context } from "elysia"; 
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -36,22 +36,10 @@ const adapter = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. CONSTRUIR LA APLICACIÓN ELYSIA
-let app = new Elysia();
+// 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN LA CADENA BASE
+let app = new Elysia()
 
-
-// 3. DEFINICIÓN DE RUTAS Y GRUPOS (Se definen primero)
-app
-    // Ruta de health check.
-    .get('/', () => 'PDS006 San Rafael API running OK.')
-    
-    // Agrupación de la API.
-    // TIPADO CORREGIDO: Tipamos 'group' explícitamente como Elysia para resolver TS7006.
-    .group('/api', (group: Elysia) => group.use(adapter.app))
-
-// 4. MANEJADORES GLOBALES (DEFINIDOS AL FINAL DE LA CADENA para resolver TS2339)
-
-// 4A. MANEJADOR DE ERRORES INTERNO (500)
+// 2A. MANEJADOR DE ERRORES INTERNO (500) - DEFINIDO PRIMERO
 .onError(({ error, set }) => {
     set.status = 500;
     
@@ -66,8 +54,7 @@ app
     };
 })
 
-// 4B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-// Colocar notFound al final ayuda a que el sistema de tipos de Elysia lo reconozca.
+// 2B. MANEJADOR DE RUTAS NO ENCONTRADAS (404) - DEFINIDO SEGUNDO
 .notFound((context: Context) => { 
     context.set.status = 404;
     console.log("NOT_FOUND (404): Route requested does not exist.");
@@ -78,12 +65,23 @@ app
 })
 
 
-// 5. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
+// 3. DEFINICIÓN DE RUTAS Y GRUPOS (Se definen después de los handlers globales)
+
+    // Ruta de health check.
+    .get('/', () => 'PDS006 San Rafael API running OK.')
+    
+    // Agrupación de la API.
+    // TIPADO CORREGIDO: Removemos el tipado explícito 'Elysia' para permitir la inferencia
+    // del tipo complejo con prefijo ("/api") y resolver TS2345.
+    .group('/api', (group) => group.use(adapter.app))
+
+
+// 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
 // Tipamos la aplicación aquí como Elysia<any> para simplicidad.
 const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
     return async (req: IncomingMessage, res: ServerResponse) => {
         try {
-            // 5.1 Convertir Node.js Request a Web Standard Request
+            // 4.1 Convertir Node.js Request a Web Standard Request
             const hostname = req.headers.host ? req.headers.host : `localhost:${SERVER_PORT}`;
             const url = new URL(req.url || '/', `http://${hostname}`);
             
@@ -113,10 +111,10 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
                 duplex: 'half' 
             });
 
-            // 5.2 Invocar al handler de Elysia (app.fetch)
+            // 4.2 Invocar al handler de Elysia (app.fetch)
             const webResponse = await elysiaApp.fetch(webRequest);
 
-            // 5.3 Convertir Web Standard Response a Node.js Response
+            // 4.3 Convertir Web Standard Response a Node.js Response
             res.statusCode = webResponse.status;
             webResponse.headers.forEach((value, key) => {
                 res.setHeader(key, value);
@@ -140,11 +138,11 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 }
 
 
-// 6. Iniciar el servidor HTTP de Node.js usando el adaptador.
+// 5. Iniciar el servidor HTTP de Node.js usando el adaptador.
 // Forzamos el tipo de 'app' a Elysia<any> aquí para el adaptador.
 const server = createServer(createWebFetchHandler(app as Elysia<any>)) 
 
-// 7. Forzar al servidor a escuchar el puerto requerido por Azure.
+// 6. Forzar al servidor a escuchar el puerto requerido por Azure.
 server.listen(SERVER_PORT, () => {
     console.log(`[App] Node.js HTTP Server: PDS006 API listening on port ${SERVER_PORT}.`);
 })
