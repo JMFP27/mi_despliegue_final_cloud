@@ -1,16 +1,22 @@
 // src/index.ts
 
+// 👇 Fuerza Node.js antes de importar Elysia
+if (typeof Bun === 'undefined') {
+  globalThis.Bun = undefined;
+}
+if (typeof Deno === 'undefined') {
+  globalThis.Deno = undefined;
+}
+
 import { Elysia } from "elysia";
 import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 
-// 1. Configuración del puerto (obligatorio en Azure)
-const PORT: number = process.env.PORT ? Number(process.env.PORT) : 8080;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 const API_BASE_URL = `http://127.0.0.1:${PORT}/api`;
 
-// 2. Inyección de dependencias
 const deviceRepository = new InMemoryDeviceRepository();
 const photoRepository = new FileSystemPhotoRepository();
 
@@ -18,10 +24,8 @@ const computerService = new ComputerService(deviceRepository, photoRepository, n
 const deviceService = new DeviceService(deviceRepository);
 const medicalDeviceService = new MedicalDeviceService(deviceRepository, photoRepository);
 
-// 3. Inicializar el adaptador
 const adapter = new ElysiaApiAdapter(computerService, deviceService, medicalDeviceService);
 
-// 4. Construir la aplicación Elysia
 const app = new Elysia()
   .onError(({ error, set }) => {
     set.status = 500;
@@ -36,7 +40,7 @@ const app = new Elysia()
   .get("/", () => "PDS006 San Rafael API running OK.")
   .group("/api", (group) => group.use(adapter.app));
 
-// 5. ESCUCHAR EN EL PUERTO → ¡OBLIGATORIO EN AZURE!
+// ✅ ¡Escucha en el puerto! Esto es obligatorio en Azure.
 app.listen(PORT, () => {
   console.log(`🦊 Elysia corriendo en el puerto ${PORT}`);
 });
