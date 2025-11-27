@@ -16,31 +16,22 @@ export class Controller {
 
     public routes() {
         return new Elysia()
-            // Se elimina el guard genérico de query aquí, ya que causaba conflicto con t.Any,
-            // lo dejamos para las rutas GET donde se usará, o lo aplicamos con t.Object.
+            // CORRECCIÓN 1: Usamos t.Object para la query, forzando la compatibilidad de tipo.
+            // Si CRITERIA_QUERY_PARAMS_SCHEMA es un ZodObject, la forma más compatible es usar t.Any(ZodObject)
+            // o redefinir con t.Object. Probaremos con t.Any, que es el wrapper oficial de Elysia para esquemas.
             .guard({
-                // Usaremos t.Object para envolver el esquema Zod y cumplir con la expectativa de Elysia/TypeScript.
-                query: t.Object({
-                    sortBy: t.Optional(t.String()),
-                    filterBy: t.Optional(t.String()),
-                    limit: t.Optional(t.String()),
-                    offset: t.Optional(t.String()),
-                }, { 
-                    // Esto permite que el esquema Zod subyacente funcione para la lógica de parseo,
-                    // mientras que Elysia tiene un TObject para el tipado.
-                    // Si el error persiste, probaremos a pasar CRITERIA_QUERY_PARAMS_SCHEMA directamente sin t.Any() ni t.Object()
-                    // o usar `as const` en la definición de CRITERIA_QUERY_PARAMS_SCHEMA.
-                })
+                // Si CRITERIA_QUERY_PARAMS_SCHEMA está definido como Zod.object, debemos usar t.Any()
+                query: t.Any(CRITERIA_QUERY_PARAMS_SCHEMA) 
             })
             // RUTA POST: checkin de Computadora
             .post(
                 "/computers/checkin",
+                // El body ya está tipado por Elysia, usamos 'as' para asegurar la llamada al servicio.
                 ({ body }) => this.checkinComputer(body as ComputerRequest), 
                 {
                     type: "multipart/form-data",
-                    // CORRECCIÓN 2: Usamos "as const" para ayudar a TypeScript a inferir el tipo estricto, 
-                    // resolviendo el conflicto con TAny/TSchema.
-                    body: COMPUTER_REQUEST_SCHEMA as const
+                    // CORRECCIÓN 2: Volvemos a t.Any, ya que "as const" falló.
+                    body: t.Any(COMPUTER_REQUEST_SCHEMA) 
                 }
             )
             // RUTA POST: checkin de Dispositivo Médico
@@ -48,9 +39,9 @@ export class Controller {
                 "/medicaldevices/checkin",
                 ({ body }) => this.checkinMedicalDevice(body as MedDeviceRequest),
                 {
-                    type: "multipart/form-data",
-                    // CORRECCIÓN 3: Usamos "as const"
-                    body: MED_DEVICE_REQUEST_SCHEMA as const
+                    type: "multipart/form-data", // Asumo que maneja archivos
+                    // CORRECCIÓN 3: Volvemos a t.Any
+                    body: t.Any(MED_DEVICE_REQUEST_SCHEMA) 
                 }
             )
             // RUTA POST: Registro de Computadora Frecuente
@@ -59,8 +50,8 @@ export class Controller {
                 ({ body }) => this.registerFrequentComputer(body as ComputerRequest),
                 {
                     type: "multipart/form-data",
-                    // CORRECCIÓN 4: Usamos "as const"
-                    body: COMPUTER_REQUEST_SCHEMA as const
+                    // CORRECCIÓN 4: Volvemos a t.Any
+                    body: t.Any(COMPUTER_REQUEST_SCHEMA)
                 }
             )
             .get(
@@ -80,9 +71,9 @@ export class Controller {
                 ({ query }) => this.getEnteredDevices(query as CriteriaQueryParams)
             )
             .guard({
-                // CORRECCIÓN 5: Usamos t.Object con t.String para el parámetro, lo que es compatible con la sintaxis de `guard` de Elysia.
+                // CORRECCIÓN 5: Usamos t.Object con t.String para el parámetro, compatible con el guard de Elysia.
                 params: t.Object({
-                    id: t.String({ format: 'uuid' }) // Usamos t.String de Elysia y aplicamos formato UUID
+                    id: t.String({ format: 'uuid' }) 
                 })
             })
             .patch(
