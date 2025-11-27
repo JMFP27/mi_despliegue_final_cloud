@@ -84,17 +84,23 @@ const server = http.createServer(async (req, res) => {
         // Usamos await para resolver la Promise y obtenemos el objeto Response (Web API)
         const response: Response = await app.fetch(request);
 
+        // APLICAR FIX: Clonamos la respuesta inmediatamente para asegurarnos de que el cuerpo
+        // no haya sido consumido por librerías externas (como Application Insights/instrumentación)
+        // antes de que intentemos leerlo.
+        const clonedResponse = response.clone();
+
+
         // 4. Transferir respuesta al objeto de respuesta de Node.js
-        response.headers.forEach((value: string, key: string) => {
+        clonedResponse.headers.forEach((value: string, key: string) => {
             res.setHeader(key, value);
         });
         
-        res.writeHead(response.status);
+        res.writeHead(clonedResponse.status);
 
         // 5. Enviar el cuerpo
-        if (response.body) {
+        if (clonedResponse.body) {
             // Convertimos el ReadableStream de la Web API a un Buffer para Node.js
-            const buffer = await response.arrayBuffer();
+            const buffer = await clonedResponse.arrayBuffer();
             res.end(Buffer.from(buffer));
         } else {
             res.end();
