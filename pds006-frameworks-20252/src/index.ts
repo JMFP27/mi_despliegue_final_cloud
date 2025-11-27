@@ -2,7 +2,7 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos solo Elysia. Eliminamos Context para evitar el conflicto TS2769
+// Importamos solo Elysia.
 import Elysia from "elysia"; 
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -38,16 +38,16 @@ const adapter = new ElysiaApiAdapter(
 
 /**
  * Encapsula la construcción de la aplicación Elysia.
- * Rompemos el encadenamiento y usamos @ts-ignore para forzar la compilación sobre los métodos
- * que el compilador no puede inferir correctamente.
+ * Se elimina el método '.notFound' que fallaba en tiempo de ejecución. 
+ * Se reemplaza por un handler catch-all de rutas ('*').
  */
 function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
-    // 1. Crear la instancia y forzar la aserción de tipo inmediatamente.
-    const app = new Elysia() as Elysia<any>;
+    // Usamos 'any' para la instancia para evitar conflictos persistentes de tipado.
+    const app: any = new Elysia(); 
 
     // 2. MANEJADOR DE ERRORES INTERNO (500)
-    // Se llama directamente sobre 'app'.
-    app.onError((context: any) => {
+    // Se usa '.use' con '.onError' para una implementación más estable.
+    app.use((elysiaInstance: any) => elysiaInstance.onError((context: any) => {
         const { error, set } = context; 
         set.status = 500;
         
@@ -60,26 +60,25 @@ function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
             message: `Internal Server Error: ${err.name}`,
             trace: err.message
         };
-    });
+    }));
 
-    // 3. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    // Ignoramos el error TS2339 para 'notFound'.
-    // @ts-ignore
-    app.notFound((context: any) => { 
+    // 3. RUTAS DEFINIDAS
+    app.get('/', () => 'PDS006 San Rafael API running OK.');
+    
+    // Agrupación de la API.
+    app.group('/api', (group: any) => group.use(adapter.app));
+
+    // 4. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+    // IMPORTANTE: Reemplazamos app.notFound (que falla en runtime) con un handler catch-all.
+    // Este handler debe ir al final de la definición de rutas.
+    app.all('*', (context: any) => { 
         context.set.status = 404;
         console.log("NOT_FOUND (404): Route requested does not exist.");
         return {
             error: true,
-            message: "Route Not Found",
+            message: "Route Not Found (via Catch-All)",
         };
     });
-    
-    // 4. DEFINICIÓN DE RUTAS Y GRUPOS
-    app.get('/', () => 'PDS006 San Rafael API running OK.');
-    
-    // Agrupación de la API. Ignoramos el error TS2339 para 'group'.
-    // @ts-ignore
-    app.group('/api', (group: any) => group.use(adapter.app));
 
     return app;
 }
