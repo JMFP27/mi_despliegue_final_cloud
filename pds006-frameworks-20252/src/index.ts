@@ -38,32 +38,55 @@ const adapter = new ElysiaApiAdapter(
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
 const app = new Elysia()
-    // Manejador de errores para depuración.
+    // Manejador de errores interno (e.g., errores de código 500)
     .onError(({ error, set }) => {
-        set.status = 500
+        // Si el error es un NOT_FOUND, será manejado por .notFound()
+        // Este bloque se enfoca en errores 500 no capturados.
+        if (error.name === 'NOT_FOUND') {
+            // Este caso es improbable si .notFound() está definido, pero actúa como fallback
+            set.status = 404;
+            return {
+                error: true,
+                message: "Resource Not Found: Handled by onError fallback.",
+            };
+        }
+
+        set.status = 500;
         
         const err = error as Error;
 
-        console.error("ELYISA RUNTIME ERROR:", err.name, err.message, err.stack)
+        console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
         
         return {
             error: true,
             message: `Internal Server Error: ${err.name}`,
             trace: err.message
-        }
+        };
     })
+    
+    // *** NUEVA CORRECCIÓN: MANEJADOR EXPLÍCITO DE RUTAS NO ENCONTRADAS (404) ***
+    .notFound(({ set }) => {
+        set.status = 404;
+        // Imprimir un mensaje en el log que indica que una ruta 404 fue solicitada.
+        console.log("NOT_FOUND (404): Route requested does not exist.");
+        return {
+            error: true,
+            message: "Route Not Found",
+        };
+    })
+
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     .group('/api', (group) => group.use(adapter.app))
 
 
 // 3. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
-// Esto permite que el handler de Elysia (app.fetch) sea usado por createServer().
 const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
     return async (req: IncomingMessage, res: ServerResponse) => {
         try {
             // 3.1 Convertir Node.js Request a Web Standard Request
-            const hostname = req.headers.host ? req.headers.host : 'localhost';
+            // Se utiliza req.headers.host para obtener el host, que puede incluir el puerto.
+            const hostname = req.headers.host ? req.headers.host : `localhost:${SERVER_PORT}`;
             const url = new URL(req.url || '/', `http://${hostname}`);
             
             // Determinar el cuerpo de la solicitud: solo si no es GET/HEAD.
@@ -87,8 +110,6 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
             const webRequest = new Request(url, {
                 method: req.method,
                 headers: headers,
-                // FIX TS2322: Se utiliza 'body as any' para forzar la compatibilidad de tipos entre
-                // ReadableStream de Node.js y BodyInit del Web Standard.
                 body: body as any, 
                 // @ts-ignore: 'duplex: "half"' es un requisito de Node.js para el fetch con cuerpo.
                 duplex: 'half' 
@@ -111,7 +132,7 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
             }
 
         } catch (error) {
-            console.error("Error en el adaptador HTTP/Web Standard:", error);
+            console.error("Error en el adaptador HTTP/Web Standard (500):", error);
             if (!res.headersSent) {
                 res.statusCode = 500;
                 res.end("Internal Server Error (Adapter Failure)");
@@ -122,12 +143,9 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
-// FIX TS2352: Conversión explícita a 'unknown' antes de la aserción de tipo a 'Elysia<any>'.
 const server = createServer(createWebFetchHandler(app as unknown as Elysia<any>))
 
-// 5. Forzar al servidor a escuchar el puerto requerido por Azure (soluciona el error 504).
+// 5. Forzar al servidor a escuchar el puerto requerido por Azure.
 server.listen(SERVER_PORT, () => {
     console.log(`[App] Node.js HTTP Server: PDS006 API listening on port ${SERVER_PORT}.`);
 })
-
-// Nota: Ya no se exporta la aplicación, el proceso se mantiene activo por server.listen().
