@@ -4,14 +4,12 @@ import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 import Elysia from "elysia";
 
-// 1. DETERMINACIÓN DEL PUERTO
+// Determinación del puerto para la URL base (necesario para ComputerService),
+// pero ya NO se usa para la función .listen().
 const DEFAULT_AZURE_PORT = 8080;
 const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
-// Utilizamos la dirección 0.0.0.0 para que el servidor escuche en todas las interfaces,
-// lo cual es estándar para el despliegue en entornos cloud como Azure.
-const SERVER_HOST = '0.0.0.0'; 
 
-// Base URL para llamadas internas. Usamos 127.0.0.1 como loopback explícito en lugar de localhost.
+// Base URL para llamadas internas. Usamos 127.0.0.1 como loopback explícito.
 const API_BASE_URL = `http://127.0.0.1:${SERVER_PORT}/api`;
 
 const deviceRepository = new InMemoryDeviceRepository()
@@ -38,37 +36,30 @@ const adapter = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. CONSTRUIR Y APLICAR EL PREFIJO FINAL
+// CONSTRUIR Y APLICAR EL PREFIJO FINAL
 const app = new Elysia()
-    // AÑADIDO: Manejador de errores para depuración. Captura errores de runtime y los registra.
+    // Manejador de errores para depuración. Captura errores de runtime y los registra.
     .onError(({ error, set }) => {
         set.status = 500
         
-        // FIX TS2339: Se realiza una aserción de tipo (error as Error) para asegurar
-        // que TypeScript reconozca las propiedades 'name', 'message' y 'stack'.
+        // Asersión de tipo para resolver errores de TypeScript (TS2339).
         const err = error as Error;
 
         console.error("ELYISA RUNTIME ERROR:", err.name, err.message, err.stack)
         
-        // El error de App Insights a menudo causa esto. Devolvemos un 500 amigable.
+        // Devolvemos un 500 amigable.
         return {
             error: true,
             message: `Internal Server Error: ${err.name}`,
             trace: err.message
         }
     })
-    // FIX CLAVE: Añadir una ruta raíz (/) para el health check y el puerto de entrada.
-    // Esto asegura que Azure reciba un 200 OK y no interprete el 404 como un fallo de servidor.
+    // Añadir una ruta raíz (/) para el health check y el puerto de entrada.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     .group('/api', (group) => group.use(adapter.app))
 
-// 3. INICIAR LA APLICACIÓN DE FORMA ESTÁNDAR CON ELYSIA Y NODE.JS
-
-app.listen({ 
-    port: SERVER_PORT,
-    hostname: SERVER_HOST 
-}, () => {
-    // Añadimos logs para confirmar el inicio.
-    console.log(`[Elysia] 🦊 Running compatible on Node.js at http://${SERVER_HOST}:${SERVER_PORT}`)
-    console.log(`[App] Server listening on port ${SERVER_PORT}`);
-});
+// CAMBIO CRÍTICO: Exportar el objeto de la aplicación directamente.
+// Esto utiliza el adaptador Web-Standard (fetch API) de Elysia, que es el
+// método sugerido por el error de despliegue ("export default Elysia.fetch").
+// El host de Azure ahora tomará este handler y lo escuchará en el puerto configurado.
+export default app;
