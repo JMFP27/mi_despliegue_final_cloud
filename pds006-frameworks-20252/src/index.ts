@@ -40,7 +40,7 @@ const adapter = new ElysiaApiAdapter(
 const app = new Elysia()
 
     // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    // FIX: Colocamos .notFound aquí. El tipado explícito (context: Context) evita el error 'implicit any'.
+    // El tipado explícito con (context: Context) ayuda a la inferencia.
     .notFound((context: Context) => { 
         context.set.status = 404;
         console.log("NOT_FOUND (404): Route requested does not exist.");
@@ -49,12 +49,15 @@ const app = new Elysia()
             message: "Route Not Found",
         };
     })
-    
+
     // 2B. MANEJADOR DE ERRORES INTERNO (500)
-    .onError(({ error, set }) => {
-        set.status = 500;
+    // FIX TS7031: Usamos el objeto completo 'context' tipado como Context & { error: unknown }
+    // para evitar el error 'implicit any' en la desestructuración de { error, set }.
+    .onError((context: Context & { error: unknown }) => {
+        context.set.status = 500;
         
-        const err = error as unknown as Error; 
+        // Accedemos al error y lo casteamos.
+        const err = context.error as Error; 
 
         console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
         
