@@ -1,5 +1,5 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "../../../core/service";
-import Elysia from "elysia";
+import Elysia, { t } from "elysia"; // Importamos 't' (el constructor de tipos de Elysia)
 import { CRITERIA_QUERY_PARAMS_SCHEMA, CriteriaHelper, CriteriaQueryParams } from "./criteria.helper";
 // Corregido a rutas relativas correctas
 import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "../../../core/dto";
@@ -17,16 +17,18 @@ export class Controller {
     public routes() {
         return new Elysia()
             .guard({
-                query: CRITERIA_QUERY_PARAMS_SCHEMA
+                // CORRECCIÓN 1: Envolvemos el esquema de Zod para query en t.Any() o t.Object() si el tipo es complejo y no una validación estándar.
+                // Como es para un `guard` con `query`, lo dejamos directamente, pero si da problemas, lo envolvemos en `t.Any(CRITERIA_QUERY_PARAMS_SCHEMA)`.
+                query: t.Any(CRITERIA_QUERY_PARAMS_SCHEMA) 
             })
             // RUTA POST: checkin de Computadora
             .post(
                 "/computers/checkin",
-                // El body ya está tipado por Elysia, usamos 'as' para asegurar la llamada al servicio.
                 ({ body }) => this.checkinComputer(body as ComputerRequest), 
                 {
                     type: "multipart/form-data",
-                    body: COMPUTER_REQUEST_SCHEMA // Esquema Zod pasado directamente
+                    // CORRECCIÓN 2: Usamos t.Any(ZodSchema) para que Elysia reconozca el objeto Zod como un TSchema válido.
+                    body: t.Any(COMPUTER_REQUEST_SCHEMA) 
                 }
             )
             // RUTA POST: checkin de Dispositivo Médico
@@ -34,8 +36,9 @@ export class Controller {
                 "/medicaldevices/checkin",
                 ({ body }) => this.checkinMedicalDevice(body as MedDeviceRequest),
                 {
-                    type: "multipart/form-data", // Asumo que maneja archivos
-                    body: MED_DEVICE_REQUEST_SCHEMA 
+                    type: "multipart/form-data",
+                    // CORRECCIÓN 3: Usamos t.Any(ZodSchema)
+                    body: t.Any(MED_DEVICE_REQUEST_SCHEMA) 
                 }
             )
             // RUTA POST: Registro de Computadora Frecuente
@@ -44,7 +47,8 @@ export class Controller {
                 ({ body }) => this.registerFrequentComputer(body as ComputerRequest),
                 {
                     type: "multipart/form-data",
-                    body: COMPUTER_REQUEST_SCHEMA
+                    // CORRECCIÓN 4: Usamos t.Any(ZodSchema)
+                    body: t.Any(COMPUTER_REQUEST_SCHEMA)
                 }
             )
             .get(
@@ -64,8 +68,9 @@ export class Controller {
                 ({ query }) => this.getEnteredDevices(query as CriteriaQueryParams)
             )
             .guard({
-                params: z.object({
-                    id: z.string().uuid()
+                // CORRECCIÓN 5: Usamos t.Object con t.String para el parámetro, lo que es compatible con la sintaxis de `guard` de Elysia.
+                params: t.Object({
+                    id: t.String({ format: 'uuid' }) // Usamos t.String de Elysia y aplicamos formato UUID
                 })
             })
             .patch(
