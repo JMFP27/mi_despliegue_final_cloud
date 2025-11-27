@@ -1,130 +1,42 @@
+// src/index.ts
+
+import { Elysia } from "elysia";
 import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-import Elysia from "elysia";
-// Importamos los módulos HTTP nativo y Stream de Node.js.
-import { IncomingMessage, ServerResponse, createServer } from 'node:http';
-import { Readable } from 'node:stream'; // Necesario para adaptar streams
 
-// 1. DETERMINACIÓN DEL PUERTO (CRÍTICO)
-const DEFAULT_AZURE_PORT = 8080;
-const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
-const API_BASE_URL = `http://127.0.0.1:${SERVER_PORT}/api`;
+// 1. Configuración del puerto (obligatorio en Azure)
+const PORT: number = process.env.PORT ? Number(process.env.PORT) : 8080;
+const API_BASE_URL = `http://127.0.0.1:${PORT}/api`;
 
-const deviceRepository = new InMemoryDeviceRepository()
-const photoRepository = new FileSystemPhotoRepository()
+// 2. Inyección de dependencias
+const deviceRepository = new InMemoryDeviceRepository();
+const photoRepository = new FileSystemPhotoRepository();
 
-// Inyección de dependencias para los servicios
-const computerService = new ComputerService(
-    deviceRepository,
-    photoRepository,
-    new URL(API_BASE_URL)
-)
+const computerService = new ComputerService(deviceRepository, photoRepository, new URL(API_BASE_URL));
+const deviceService = new DeviceService(deviceRepository);
+const medicalDeviceService = new MedicalDeviceService(deviceRepository, photoRepository);
 
-const deviceService = new DeviceService(deviceRepository)
+// 3. Inicializar el adaptador
+const adapter = new ElysiaApiAdapter(computerService, deviceService, medicalDeviceService);
 
-const medicalDeviceService = new MedicalDeviceService(
-    deviceRepository,
-    photoRepository
-)
-
-// Inicializamos el adaptador que solo contiene las rutas sin prefijo
-const adapter = new ElysiaApiAdapter(
-    computerService,
-    deviceService,
-    medicalDeviceService
-)
-
-// 2. CONSTRUIR LA APLICACIÓN
+// 4. Construir la aplicación Elysia
 const app = new Elysia()
-    // Manejador de errores para depuración.
-    .onError(({ error, set }) => {
-        set.status = 500
-        
-        const err = error as Error;
-
-        console.error("ELYISA RUNTIME ERROR:", err.name, err.message, err.stack)
-        
-        return {
-            error: true,
-            message: `Internal Server Error: ${err.name}`,
-            trace: err.message
-        }
-    })
-    // Ruta de health check.
-    .get('/', () => 'PDS006 San Rafael API running OK.')
-    .group('/api', (group) => group.use(adapter.app))
-
-
-// 3. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
-// Esto es necesario para que el handler de Elysia (app.fetch) pueda ser usado por createServer().
-const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
-    return async (req: IncomingMessage, res: ServerResponse) => {
-        try {
-            // 3.1 Convertir Node.js Request a Web Standard Request
-            const hostname = req.headers.host ? req.headers.host : 'localhost';
-            const url = new URL(req.url || '/', `http://${hostname}`);
-            
-            // Determinar el cuerpo de la solicitud: solo si no es GET/HEAD.
-            const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
-            // Convertir el stream de Node.js a un stream Web para el cuerpo de la solicitud.
-            const body = hasBody ? Readable.toWeb(req) : null; 
-
-            // Convertir Node.js headers a Web Headers
-            const headers = new Headers();
-            for (const [key, value] of Object.entries(req.headers)) {
-                if (value) {
-                    if (Array.isArray(value)) {
-                        value.forEach(v => headers.append(key, v));
-                    } else {
-                        headers.append(key, value);
-                    }
-                }
-            }
-
-            // Construir el objeto Web Request. 'duplex' es necesario para Node.js fetch compatibility.
-            const webRequest = new Request(url, {
-                method: req.method,
-                headers: headers,
-                body: body,
-                // @ts-ignore: 'duplex: "half"' es un requisito de Node.js para el fetch con cuerpo.
-                duplex: 'half' 
-            });
-
-            // 3.2 Invocar al handler de Elysia (app.fetch)
-            const webResponse = await elysiaApp.fetch(webRequest);
-
-            // 3.3 Convertir Web Standard Response a Node.js Response
-            res.statusCode = webResponse.status;
-            webResponse.headers.forEach((value, key) => {
-                res.setHeader(key, value);
-            });
-
-            if (webResponse.body) {
-                // Leer el cuerpo del Web Stream y canalizarlo al Node.js Response
-                await Readable.fromWeb(webResponse.body as any).pipe(res);
-            } else {
-                res.end();
-            }
-
-        } catch (error) {
-            console.error("Error en el adaptador HTTP/Web Standard:", error);
-            if (!res.headersSent) {
-                res.statusCode = 500;
-                res.end("Internal Server Error (Adapter Failure)");
-            }
-        }
+  .onError(({ error, set }) => {
+    set.status = 500;
+    const err = error as Error;
+    console.error("ELYISA RUNTIME ERROR:", err.name, err.message, err.stack);
+    return {
+      error: true,
+      message: `Internal Server Error: ${err.name}`,
+      trace: err.message,
     };
-}
+  })
+  .get("/", () => "PDS006 San Rafael API running OK.")
+  .group("/api", (group) => group.use(adapter.app));
 
-
-// 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
-const server = createServer(createWebFetchHandler(app))
-
-// Forzamos el servidor a escuchar el puerto y mantener el proceso vivo.
-server.listen(SERVER_PORT, () => {
-    console.log(`[App] Node.js HTTP Server: PDS006 API listening on port ${SERVER_PORT}.`);
-})
-
-// Exportación no necesaria, el proceso se mantiene activo por server.listen().
+// 5. ESCUCHAR EN EL PUERTO → ¡OBLIGATORIO EN AZURE!
+app.listen(PORT, () => {
+  console.log(`🦊 Elysia corriendo en el puerto ${PORT}`);
+});
