@@ -15,14 +15,8 @@ export class Controller {
     ) {}
 
     public routes() {
+        // CORRECCIÓN 1: Eliminamos el guard de query genérico que causaba el error TS2322.
         return new Elysia()
-            // CORRECCIÓN 1: Usamos t.Object para la query, forzando la compatibilidad de tipo.
-            // Si CRITERIA_QUERY_PARAMS_SCHEMA es un ZodObject, la forma más compatible es usar t.Any(ZodObject)
-            // o redefinir con t.Object. Probaremos con t.Any, que es el wrapper oficial de Elysia para esquemas.
-            .guard({
-                // Si CRITERIA_QUERY_PARAMS_SCHEMA está definido como Zod.object, debemos usar t.Any()
-                query: t.Any(CRITERIA_QUERY_PARAMS_SCHEMA) 
-            })
             // RUTA POST: checkin de Computadora
             .post(
                 "/computers/checkin",
@@ -30,7 +24,7 @@ export class Controller {
                 ({ body }) => this.checkinComputer(body as ComputerRequest), 
                 {
                     type: "multipart/form-data",
-                    // CORRECCIÓN 2: Volvemos a t.Any, ya que "as const" falló.
+                    // Mantener t.Any() para el body, es la forma correcta de envolver Zod para body
                     body: t.Any(COMPUTER_REQUEST_SCHEMA) 
                 }
             )
@@ -39,8 +33,7 @@ export class Controller {
                 "/medicaldevices/checkin",
                 ({ body }) => this.checkinMedicalDevice(body as MedDeviceRequest),
                 {
-                    type: "multipart/form-data", // Asumo que maneja archivos
-                    // CORRECCIÓN 3: Volvemos a t.Any
+                    type: "multipart/form-data", 
                     body: t.Any(MED_DEVICE_REQUEST_SCHEMA) 
                 }
             )
@@ -50,12 +43,12 @@ export class Controller {
                 ({ body }) => this.registerFrequentComputer(body as ComputerRequest),
                 {
                     type: "multipart/form-data",
-                    // CORRECCIÓN 4: Volvemos a t.Any
                     body: t.Any(COMPUTER_REQUEST_SCHEMA)
                 }
             )
             .get(
                 "/computers",
+                // La validación de query se deja a la lógica interna de CriteriaHelper
                 ({ query }) => this.getComputers(query as CriteriaQueryParams)
             )
             .get(
@@ -70,10 +63,10 @@ export class Controller {
                 "/devices/entered",
                 ({ query }) => this.getEnteredDevices(query as CriteriaQueryParams)
             )
+            // Mantenemos el guard de params, ya que está correctamente definido con t.Object
             .guard({
-                // CORRECCIÓN 5: Usamos t.Object con t.String para el parámetro, compatible con el guard de Elysia.
                 params: t.Object({
-                    id: t.String({ format: 'uuid' }) 
+                    id: t.String({ format: 'uuid' }) // Usamos t.String de Elysia y aplicamos formato UUID
                 })
             })
             .patch(
