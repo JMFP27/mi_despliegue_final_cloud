@@ -2,8 +2,8 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos Context y Elysia para el tipado.
-import Elysia, { Context } from "elysia"; 
+// Importamos solo Elysia. Eliminamos Context para evitar el conflicto TS2769
+import Elysia from "elysia"; 
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Readable } from 'node:stream';
 
@@ -39,19 +39,23 @@ const adapter = new ElysiaApiAdapter(
 /**
  * Encapsula la construcción de la aplicación Elysia.
  * Forzamos el tipo inmediatamente después de la instanciación para evitar que TypeScript
- * pierda los métodos base como .notFound y .onError.
+ * pierda los métodos base como .notFound y .onError durante el encadenamiento complejo.
  */
 function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
     // Forzar la aserción de tipo inmediatamente para establecer la base.
+    // Esto es fundamental para resolver los problemas de encadenamiento (TS2339).
     const app = new Elysia() as Elysia<any>;
 
     // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES
     return app
         // 2B. MANEJADOR DE ERRORES INTERNO (500)
-        .onError((context: Context & { error: unknown }) => {
-            context.set.status = 500;
+        // Eliminamos el tipado explícito del parámetro 'context' para resolver TS2769.
+        .onError((context) => {
+            // El contexto se infiere como 'any' pero podemos usar sus propiedades.
+            const { error, set } = context; 
+            set.status = 500;
             
-            const err = context.error as Error; 
+            const err = error as Error; 
 
             console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
             
@@ -63,8 +67,7 @@ function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
         })
 
         // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-        // El error TS2339 debería estar resuelto gracias a la aserción de tipo en 'app'.
-        .notFound((context: Context) => { 
+        .notFound((context) => { 
             context.set.status = 404;
             console.log("NOT_FOUND (404): Route requested does not exist.");
             return {
@@ -77,8 +80,8 @@ function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
         // Ruta de health check.
         .get('/', () => 'PDS006 San Rafael API running OK.')
         
-        // Agrupación de la API. Tipamos 'group' explícitamente para resolver TS7006.
-        .group('/api', (group: Elysia<any>) => group.use(adapter.app));
+        // Agrupación de la API.
+        .group('/api', (group) => group.use(adapter.app));
 }
 
 // 2. Construir la aplicación usando la función encapsulada
