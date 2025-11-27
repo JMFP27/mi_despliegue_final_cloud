@@ -2,7 +2,7 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos Context para tipar el notFound handler, resolviendo el error TS7006.
+// Importamos Context para tipar el notFound handler.
 import Elysia, { Context } from "elysia"; 
 // Importamos los módulos HTTP nativo y Stream de Node.js.
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
@@ -40,12 +40,12 @@ const adapter = new ElysiaApiAdapter(
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
 let app = new Elysia();
 
-// 3. MANEJADORES GLOBALES (DEFINIDOS PRIMERO PARA MEJOR INFERENCIA DE TIPOS)
-// Este orden resuelve el error 'Property 'notFound' does not exist'.
+// 3. MANEJADORES GLOBALES (DEFINIDOS PRIMERO PARA RESOLVER CONFLICTO DE TIPOS)
+// Este orden es el que suele resolver el error 'Property 'notFound' does not exist'
+// en las versiones recientes de Elysia.
 
 // 3A. MANEJADOR DE ERRORES INTERNO (500)
 app.onError(({ error, set }) => {
-    // Usamos el argumento desestructurado para forzar la inferencia
     set.status = 500;
     
     const err = error as unknown as Error; 
@@ -60,7 +60,6 @@ app.onError(({ error, set }) => {
 });
 
 // 3B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-// Tipamos explícitamente 'context: Context' para resolver el error TS7006.
 app.notFound((context: Context) => { 
     context.set.status = 404;
     console.log("NOT_FOUND (404): Route requested does not exist.");
@@ -69,6 +68,7 @@ app.notFound((context: Context) => {
         message: "Route Not Found",
     };
 });
+
 
 // 4. DEFINICIÓN DE RUTAS (Encadenadas al final)
 
