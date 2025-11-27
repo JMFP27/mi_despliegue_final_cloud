@@ -1,27 +1,23 @@
 {
   "name": "pds006sanrafael",
   "version": "1.0.50",
-  "description": "",
-  "main": "index.js",
+  "description": "Project for PDS006 frameworks",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
     "prestart": "npm run build",
-    "start": "node dist/index.js",
-    "build": "tsc"
+    "start": "node dist/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@elysiajs/cors": "^1.0.2",
-    "@elysiajs/swagger": "^1.0.2", 
-    "@sinclair/typebox": "^0.34.0",
-    "elysia": "^1.4.16",
-    "@elysiajs/openapi": "^1.0.2"
+    "@elysiajs/adapter-node": "^0.8.0",
+    "elysia": "^0.8.17"
+
   },
   "devDependencies": {
-    "@types/node": "^20.12.12",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
   }
 }
