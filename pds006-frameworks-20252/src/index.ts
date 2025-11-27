@@ -37,10 +37,12 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN LA CADENA BASE
+// Inicializamos la aplicación base
 let app = new Elysia()
 
 // 2A. MANEJADOR DE ERRORES INTERNO (500)
-.onError(({ error, set }) => {
+// Asignación explícita para forzar la inferencia correcta
+app = app.onError(({ error, set }) => {
     set.status = 500;
     
     const err = error as unknown as Error; 
@@ -55,7 +57,8 @@ let app = new Elysia()
 })
 
 // 2B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-.notFound((context: Context) => { 
+// El error TS2339 debería resolverse al estabilizar la inferencia del paso anterior
+app = app.notFound((context: Context) => { 
     context.set.status = 404;
     console.log("NOT_FOUND (404): Route requested does not exist.");
     return {
@@ -66,12 +69,12 @@ let app = new Elysia()
 
 
 // 3. DEFINICIÓN DE RUTAS Y GRUPOS 
-
+app = app
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
     // Agrupación de la API.
-    // CORRECCIÓN: Usamos Elysia<any> para satisfacer TS7006 (implicit any)
+    // Usamos Elysia<any> para evitar el error TS7006 (implicit any)
     .group('/api', (group: Elysia<any>) => group.use(adapter.app))
 
 
