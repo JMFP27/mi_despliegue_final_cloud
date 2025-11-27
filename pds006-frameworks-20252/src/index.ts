@@ -2,10 +2,9 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos Context, ErrorContext y la inferencia de tipos de Elysia para mayor precisión.
-// Notar que la importación de 'Elysia' no tiene genéricos para simplificar la inicialización.
+// Importamos Context, ErrorContext y la inferencia de tipos de Elysia.
 import Elysia, { Context, ErrorContext } from "elysia"; 
-// Importamos los módulos HTTP nativo y Stream de Node.js, necesarios para la compatibilidad con Azure.
+// Importamos los módulos HTTP nativo y Stream de Node.js.
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Readable } from 'node:stream';
 
@@ -39,51 +38,47 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
-let app = new Elysia()
+// FIX PRINCIPAL: Inicializamos la app, pero no la encadenamos inmediatamente.
+let app = new Elysia() as Elysia<any>; // Cast inmediato para asegurar el tipo base.
 
-// FIX: Forzamos el tipo de 'app' a Elysia<any> inmediatamente. Esto garantiza que 
-// TypeScript reconozca todos los métodos base (.notFound, .onError) a pesar 
-// de la compleja inferencia de tipos durante el encadenamiento.
-const baseApp = app as Elysia<any>
+// *** 2A. MANEJADORES DE ERRORES GLOBALES (Configuración separada) ***
 
-baseApp
-    // *** 2A. MANEJADORES DE ERRORES GLOBALES ***
+// FIX TS2339: Aplicamos notFound y onError directamente a la variable 'app' tipada.
+// Usamos la firma completa del manejador para el contexto.
 
-    // 1. Manejador explícito de rutas no encontradas (404)
-    // Usamos el tipo Context estándar, lo que resuelve el TS7006.
-    .notFound((context: Context) => { 
-        context.set.status = 404;
-        console.log("NOT_FOUND (404): Route requested does not exist.");
-        return {
-            error: true,
-            message: "Route Not Found",
-        };
-    })
+// 1. Manejador explícito de rutas no encontradas (404)
+app.notFound((context: Context) => { // FIX TS7006: Tipado explícito de 'context'
+    context.set.status = 404;
+    console.log("NOT_FOUND (404): Route requested does not exist.");
+    return {
+        error: true,
+        message: "Route Not Found",
+    };
+});
 
-    // 2. Manejador de errores interno (e.g., errores de código 500)
-    // Usamos la firma simple de handler y forzamos el tipo a ErrorContext dentro.
-    .onError((context) => {
-        // Cast el contexto a ErrorContext para asegurar que las propiedades 'error' y 'set' existan (Fix TS2339).
-        const { error, set } = context as ErrorContext;
-        set.status = 500;
-        
-        const err = error as unknown as Error; 
-
-        console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
-        
-        return {
-            error: true,
-            message: `Internal Server Error: ${err.name}`,
-            trace: err.message
-        };
-    })
+// 2. Manejador de errores interno (e.g., errores de código 500)
+app.onError((context: ErrorContext) => { // FIX TS2339: Tipado como ErrorContext
+    const { error, set } = context; // Desestructuración segura
+    set.status = 500;
     
-    // *** 2B. DEFINICIÓN DE RUTAS ***
+    const err = error as unknown as Error; 
 
+    console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
+    
+    return {
+        error: true,
+        message: `Internal Server Error: ${err.name}`,
+        trace: err.message
+    };
+});
+    
+// *** 2B. DEFINICIÓN DE RUTAS (Encadenamiento normal de rutas) ***
+
+app
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
-    // Fix TS7006: Tipamos explícitamente el parámetro 'group'.
+    // Agrupación de la API
     .group('/api', (group: Elysia<any>) => group.use(adapter.app))
 
 
@@ -149,8 +144,7 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
-// Usamos baseApp, que ya está tipada correctamente como Elysia<any>.
-const server = createServer(createWebFetchHandler(baseApp))
+const server = createServer(createWebFetchHandler(app))
 
 // 5. Forzar al servidor a escuchar el puerto requerido por Azure.
 server.listen(SERVER_PORT, () => {
