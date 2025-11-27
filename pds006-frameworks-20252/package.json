@@ -1,6 +1,6 @@
 {
   "name": "pds006sanrafael",
-  "version": "1.0.50",
+  "version": "1.0.50", 
   "description": "Project for PDS006 frameworks",
   "main": "dist/index.js",
   "scripts": {
