@@ -3,11 +3,10 @@ import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 import Elysia from "elysia";
-// IMPORTACIÓN REQUERIDA PARA EJECUTAR ELYSIA EN NODE.JS
-import * as http from 'http'; 
+import * as http from 'http'; // Módulo nativo de Node.js
+import { Readable } from 'stream'; // Módulo nativo de Node.js para streams
 
 // 1. DETERMINACIÓN DEL PUERTO
-// Se fija el puerto a 8080, ya que es el puerto obligatorio para Azure App Service.
 const DEFAULT_AZURE_PORT = 8080;
 const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
 
@@ -39,49 +38,70 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR Y APLICAR EL PREFIJO FINAL
-// Creamos la aplicación final de Elysia y aplicamos el prefijo al módulo de rutas base.
 const app = new Elysia()
-    .group('/api', (group) => group.use(adapter.app)) // Aplicamos el prefijo '/api' al grupo de rutas
+    .group('/api', (group) => group.use(adapter.app))
 
-// 3. INICIAR LA APLICACIÓN DE FORMA COMPATIBLE CON NODE.JS
-const server = http.createServer((req, res) => {
-    // Usamos app.fetch para delegar la petición y la respuesta a Elysia
-    app.fetch(req, {
-        request: req,
-        server: server,
-        // Eliminamos el log de inicio de app.listen ya que Node.js lo maneja.
-    }).then(response => {
-        // Transferir los encabezados de respuesta
-        response.headers.forEach((value, key) => {
+// Función de utilidad para convertir un stream de Node.js a un Buffer
+function streamToBuffer(stream: Readable): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        stream.on('data', (chunk) => chunks.push(chunk as Buffer));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+}
+
+// 3. INICIAR LA APLICACIÓN DE FORMA COMPATIBLE CON NODE.JS (V3: FIX DE TIPADO)
+const server = http.createServer(async (req, res) => {
+    try {
+        const fullUrl = `http://${req.headers.host}${req.url}`;
+        
+        // 1. Manejo del Body (solo si es necesario)
+        const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
+        let body: Buffer | undefined;
+
+        if (hasBody) {
+            body = await streamToBuffer(req);
+        }
+
+        // 2. Crear el objeto Request de la Web API
+        const request = new Request(fullUrl, {
+            method: req.method,
+            // Las cabeceras de Node.js se pueden pasar directamente al constructor de Headers
+            headers: new Headers(req.headers as Record<string, string>), 
+            // El body debe ser un Buffer o un Blob para ser compatible con la Web API Request
+            body: body,
+            // Parámetro requerido por Elysia en algunos contextos de Node.js
+            duplex: 'half' as any 
+        });
+
+        // 3. Obtener la respuesta de Elysia
+        // Usamos await para resolver la Promise y obtenemos el objeto Response (Web API)
+        const response: Response = await app.fetch(request);
+
+        // 4. Transferir respuesta al objeto de respuesta de Node.js
+        response.headers.forEach((value: string, key: string) => {
             res.setHeader(key, value);
         });
         
-        // Escribir el código de estado y el cuerpo de la respuesta
         res.writeHead(response.status);
+
+        // 5. Enviar el cuerpo
         if (response.body) {
-            response.body.pipeTo(new WritableStream({
-                write(chunk) {
-                    res.write(chunk);
-                },
-                close() {
-                    res.end();
-                },
-                abort(err) {
-                    console.error('Stream aborted', err);
-                    res.end();
-                }
-            })).catch(err => {
-                console.error("Error piping response body:", err);
-                res.end();
-            });
+            // Convertimos el ReadableStream de la Web API a un Buffer para Node.js
+            const buffer = await response.arrayBuffer();
+            res.end(Buffer.from(buffer));
         } else {
             res.end();
         }
-    }).catch(err => {
+
+    } catch (error) {
+        // Corrección del error TS7006: se tipa 'error' como 'any' para evitar conflicto
+        const err = error as any; 
         console.error("Error processing request:", err);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Internal Server Error');
-    });
+    }
 });
 
 
