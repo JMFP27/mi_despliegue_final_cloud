@@ -1,6 +1,6 @@
 import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
-import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
-import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
+import { FileSystemPhotoRepository } from "./adapter/photo/filesystem/filesystem.photo-repository";
+import { InMemoryDeviceRepository } from "./adapter/repository/inmemory/inmemory.device-repository";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 
 // ** AJUSTE 1: FIX TS7017 (NECESARIO PARA COMPILAR SIN ERRORES EN NODE) **
@@ -16,11 +16,10 @@ declare global {
 globalThis.Bun = undefined;
 globalThis.Deno = undefined;
 
-// ** AJUSTE 3: ÚLTIMO INTENTO DE CORRECCIÓN DEL IMPORT DE NODE.JS (CRÍTICO) **
-// Las rutas estándar ('elysia/adapter/node') y CJS ('elysia/dist/cjs/adapter/node')
-// han fallado con ERR_PACKAGE_PATH_NOT_EXPORTED.
-// Intentaremos acceder al archivo del adaptador de Node.js directamente usando la ruta compilada.
-import 'elysia/dist/adapters/node.js'; // Cambio de la ruta de importación
+// ** AJUSTE 3: ÚLTIMA CORRECCIÓN DEL IMPORT DE NODE.JS (CRÍTICO) **
+// Intentaremos acceder a la ruta oficial de Node.js: 'elysia/node'.
+// Esto debería resolver el error ERR_PACKAGE_PATH_NOT_EXPORTED.
+import 'elysia/node';
 
 // Usamos el puerto estándar 8080 (Azure lo inyecta aquí)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
@@ -44,12 +43,9 @@ const medicalDeviceService = new MedicalDeviceService(deviceRepository, photoRep
 const adapter = new ElysiaApiAdapter(computerService, deviceService, medicalDeviceService);
 
 // 4. Modo de Ejecución (Node.js) - INICIAR EL SERVIDOR
-// La llamada a .listen() es obligatoria en Node.js para que el proceso se mantenga
-// vivo y responda a las peticiones HTTP.
+// Al importar 'elysia/node' arriba, la función .listen() usará el adaptador de Node.js.
 adapter.app.listen(PORT, ({ hostname, port }) => {
   // Cuando Azure lo inicie, el hostname será '0.0.0.0' o similar.
   console.log(`[SUCCESS] 🦊 Elysia Server is running at http://${hostname}:${port}`);
   console.log(`[INFO] 🚀 API Base URL: ${API_URL}`);
 });
-
-// Nota: Ya no exportamos la aplicación por defecto. La llamada a .listen() es el punto de entrada.
