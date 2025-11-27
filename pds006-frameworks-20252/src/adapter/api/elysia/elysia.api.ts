@@ -1,7 +1,11 @@
-// elysia.api.ts
+import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
+import Elysia from "elysia";
+import openapi from "@elysiajs/openapi";
+import { Controller } from "./controller.elysia"; 
+
 export class ElysiaApiAdapter {
     private controller: Controller;
-    public app: any; // 👈 Seguimos usando 'any' para evitar TS2322
+    public app: any;
 
     constructor(
         computerService: ComputerService,
@@ -14,8 +18,7 @@ export class ElysiaApiAdapter {
             medicalDeviceService
         );
 
-        // Configura OpenAPI con información básica
-        const app = new Elysia()
+        this.app = new Elysia()
             .use(openapi({
                 documentation: {
                     info: {
@@ -25,7 +28,5 @@ export class ElysiaApiAdapter {
                 }
             }))
             .use(this.controller.routes());
-
-        this.app = app;
     }
 }
