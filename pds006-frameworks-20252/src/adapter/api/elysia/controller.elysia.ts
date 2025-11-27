@@ -2,7 +2,7 @@ import { ComputerService, DeviceService, MedicalDeviceService } from "../../../c
 import Elysia, { t } from "elysia"; // Importamos 't' (el constructor de tipos de Elysia)
 import { CRITERIA_QUERY_PARAMS_SCHEMA, CriteriaHelper, CriteriaQueryParams } from "./criteria.helper";
 // Corregido a rutas relativas correctas
-import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "../../../core/dto";
+import { COMPUTER_REQUEST_SCHEMA, ComputerRequest, MED_DEVICE_REQUEST_SCHEMA, MedDeviceRequest } from "../../../core/dto"; 
 import * as z from "zod";
 import { Computer, EnteredDevice, FrequentComputer, MedicalDevice } from "../../../core/domain";
 
