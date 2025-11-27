@@ -37,15 +37,13 @@ const adapter = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. CONSTRUIR LA APLICACIÓN ELYSIA
-let app = new Elysia();
-
-// 3. MANEJADORES GLOBALES (DEFINIDOS PRIMERO PARA RESOLVER CONFLICTO DE TIPOS)
-// Este orden es el que suele resolver el error 'Property 'notFound' does not exist'
-// en las versiones recientes de Elysia.
+// 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN LA CADENA BASE
+// La definición encadenada de onError y notFound garantiza que el tipo base los incluya
+// y previene el error 'Property notFound does not exist'.
+let app = new Elysia()
 
 // 3A. MANEJADOR DE ERRORES INTERNO (500)
-app.onError(({ error, set }) => {
+.onError(({ error, set }) => {
     set.status = 500;
     
     const err = error as unknown as Error; 
@@ -57,22 +55,21 @@ app.onError(({ error, set }) => {
         message: `Internal Server Error: ${err.name}`,
         trace: err.message
     };
-});
+})
 
 // 3B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-app.notFound((context: Context) => { 
+.notFound((context: Context) => { 
     context.set.status = 404;
     console.log("NOT_FOUND (404): Route requested does not exist.");
     return {
         error: true,
         message: "Route Not Found",
     };
-});
+})
 
 
 // 4. DEFINICIÓN DE RUTAS (Encadenadas al final)
 
-app
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
