@@ -37,9 +37,9 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
-// FIX TS2339: Declaramos app con el tipo Elysia<any> para asegurar que TypeScript
-// reconozca los métodos globales (.notFound, .onError) a lo largo de la cadena.
-const app: Elysia<any> = new Elysia()
+// FIX TS2339: La aserción de tipo 'as Elysia<any>' se aplica a toda la expresión
+// para forzar al compilador a reconocer que el objeto final incluye .notFound.
+const app = (new Elysia()
 
     // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
     .notFound((context: Context) => { 
@@ -52,7 +52,7 @@ const app: Elysia<any> = new Elysia()
     })
 
     // 2B. MANEJADOR DE ERRORES INTERNO (500)
-    // El tipado con (context: Context & { error: unknown }) resuelve el error TS7031 anterior.
+    // El tipado con (context: Context & { error: unknown }) ya resolvió el error TS7031.
     .onError((context: Context & { error: unknown }) => {
         context.set.status = 500;
         
@@ -73,8 +73,10 @@ const app: Elysia<any> = new Elysia()
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
-    // Agrupación de la API. No necesitamos 'as Elysia<any>' al final si 'app' ya está tipado.
-    .group('/api', (group: Elysia<any>) => group.use(adapter.app)) 
+    // Agrupación de la API.
+    .group('/api', (group: Elysia<any>) => group.use(adapter.app))
+
+) as Elysia<any> // <-- Aserción forzada de tipo aquí.
 
 
 // 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
