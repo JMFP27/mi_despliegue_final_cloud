@@ -54,7 +54,9 @@ function streamToBuffer(stream: Readable): Promise<Buffer> {
 // 3. INICIAR LA APLICACIÓN DE FORMA COMPATIBLE CON NODE.JS (V3: FIX DE TIPADO)
 const server = http.createServer(async (req, res) => {
     try {
-        const fullUrl = `http://${req.headers.host}${req.url}`;
+        // Corrección de un posible error si req.headers.host no existe
+        const host = req.headers.host || `localhost:${SERVER_PORT}`;
+        const fullUrl = `http://${host}${req.url}`;
         
         // 1. Manejo del Body (solo si es necesario)
         const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
@@ -69,8 +71,8 @@ const server = http.createServer(async (req, res) => {
             method: req.method,
             // Las cabeceras de Node.js se pueden pasar directamente al constructor de Headers
             headers: new Headers(req.headers as Record<string, string>), 
-            // El body debe ser un Buffer o un Blob para ser compatible con la Web API Request
-            body: body,
+            // FIX TS2322: Convertimos el Buffer a Uint8Array para asegurar la compatibilidad de tipado con BodyInit
+            body: body ? (body as Uint8Array) : undefined, 
             // Parámetro requerido por Elysia en algunos contextos de Node.js
             duplex: 'half' as any 
         });
