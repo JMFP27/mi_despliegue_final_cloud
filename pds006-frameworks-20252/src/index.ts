@@ -16,11 +16,11 @@ declare global {
 globalThis.Bun = undefined;
 globalThis.Deno = undefined;
 
-// ** AJUSTE 3: CORRECCIÓN DEL IMPORT DEL ADAPTADOR DE NODE.JS (CRÍTICO) **
-// La ruta 'elysia/adapter/node' causa un error ERR_PACKAGE_PATH_NOT_EXPORTED
-// cuando se compila a CommonJS y se ejecuta en Node.js.
-// Usamos la ruta CJS explícita para evitar el error de "subpath not exported".
-import 'elysia/dist/cjs/adapter/node';
+// ** AJUSTE 3: ÚLTIMO INTENTO DE CORRECCIÓN DEL IMPORT DE NODE.JS (CRÍTICO) **
+// Las rutas estándar ('elysia/adapter/node') y CJS ('elysia/dist/cjs/adapter/node')
+// han fallado con ERR_PACKAGE_PATH_NOT_EXPORTED.
+// Intentaremos acceder al archivo del adaptador de Node.js directamente usando la ruta compilada.
+import 'elysia/dist/adapters/node.js'; // Cambio de la ruta de importación
 
 // Usamos el puerto estándar 8080 (Azure lo inyecta aquí)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
