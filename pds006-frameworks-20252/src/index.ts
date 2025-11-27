@@ -38,22 +38,31 @@ const adapter = new ElysiaApiAdapter(
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
 const app = new Elysia()
+    // *** 1. RUTAS PRINCIPALES (Movidas al inicio para simplificar el tipo de cadena) ***
+    // Ruta de health check.
+    .get('/', () => 'PDS006 San Rafael API running OK.')
+    // Fix TS7006: Explicitly type 'group' parameter
+    .group('/api', (group: Elysia<any>) => group.use(adapter.app))
+
+    // *** 2. MANEJADORES DE ERRORES ***
+
+    // Manejador explícito de rutas no encontradas (404)
+    // Fix TS7031: Explicitly type the destructured parameter 'set'
+    .notFound(({ set }: { set: { status: number } }) => { 
+        set.status = 404;
+        console.log("NOT_FOUND (404): Route requested does not exist.");
+        return {
+            error: true,
+            message: "Route Not Found",
+        };
+    })
+
     // Manejador de errores interno (e.g., errores de código 500)
     .onError(({ error, set }) => {
-        // Si el error es un NOT_FOUND, será manejado por .notFound()
-        // Este bloque se enfoca en errores 500 no capturados.
-        if (error.name === 'NOT_FOUND') {
-            // Este caso es improbable si .notFound() está definido, pero actúa como fallback
-            set.status = 404;
-            return {
-                error: true,
-                message: "Resource Not Found: Handled by onError fallback.",
-            };
-        }
-
         set.status = 500;
         
-        const err = error as Error;
+        // Fix TS2339: Cast to unknown first, then to Error, to ensure access to name/message
+        const err = error as unknown as Error; 
 
         console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
         
@@ -64,20 +73,6 @@ const app = new Elysia()
         };
     })
     
-    // *** NUEVA CORRECCIÓN: MANEJADOR EXPLÍCITO DE RUTAS NO ENCONTRADAS (404) ***
-    .notFound(({ set }) => {
-        set.status = 404;
-        // Imprimir un mensaje en el log que indica que una ruta 404 fue solicitada.
-        console.log("NOT_FOUND (404): Route requested does not exist.");
-        return {
-            error: true,
-            message: "Route Not Found",
-        };
-    })
-
-    // Ruta de health check.
-    .get('/', () => 'PDS006 San Rafael API running OK.')
-    .group('/api', (group) => group.use(adapter.app))
 
 
 // 3. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
