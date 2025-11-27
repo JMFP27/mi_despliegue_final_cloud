@@ -43,7 +43,7 @@ let app = new Elysia();
 
 // *** 2A. MANEJADORES DE ERRORES GLOBALES (Configuración separada) ***
 
-// FIX TS2339: Usamos @ts-ignore para evitar el error de inferencia de tipo conocido en Elysia.
+// Usamos @ts-ignore solo para notFound, ya que es la única que persiste si no hay un cast global.
 // 1. Manejador explícito de rutas no encontradas (404)
 // @ts-ignore
 app.notFound((context: Context) => { 
@@ -56,13 +56,12 @@ app.notFound((context: Context) => {
 });
 
 // 2. Manejador de errores interno (e.g., errores de código 500)
-// @ts-ignore
-app.onError((context) => {
-    // FIX TS2339 (Property 'error'): Casting el contexto a ErrorContext dentro del handler
-    // para asegurar que 'error' y 'set' existan.
-    const { error, set } = context as ErrorContext; 
+// FIX PRINCIPAL: Tipamos explícitamente el contexto como ErrorContext para resolver TS2339.
+app.onError((context: ErrorContext) => {
+    const { error, set } = context; 
     set.status = 500;
     
+    // El objeto 'error' ahora está garantizado por el tipado ErrorContext
     const err = error as unknown as Error; 
 
     console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
@@ -81,8 +80,6 @@ app
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
     // Agrupación de la API
-    // FIX TS2345: Removemos la anotación Elysia<any> para que TS infiera el tipo de grupo correctamente,
-    // que incluye el prefijo '/api', resolviendo el error de incompatibilidad.
     .group('/api', (group) => group.use(adapter.app))
 
 
