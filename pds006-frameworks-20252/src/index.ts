@@ -3,6 +3,14 @@ import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 
+// ** FIX TS7017 **: Declaramos las variables globales de Bun y Deno para que TypeScript
+// sepa que pueden ser asignadas sin lanzar el error de "tipo implícito 'any'".
+// Usamos 'declare global' para extender la definición de 'globalThis'.
+declare global {
+  var Bun: unknown;
+  var Deno: unknown;
+}
+
 // ** AJUSTE CRÍTICO PARA FORZAR EL MODO NODE.JS **
 // Al establecer Bun y Deno en `undefined` antes de cualquier importación de Elysia,
 // forzamos a Elysia a usar su adaptador de Node.js, permitiendo el uso de `.listen()`.
