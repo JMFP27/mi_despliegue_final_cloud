@@ -87,7 +87,9 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
             const webRequest = new Request(url, {
                 method: req.method,
                 headers: headers,
-                body: body,
+                // FIX TS2322: Se utiliza 'body as any' para forzar la compatibilidad de tipos entre
+                // ReadableStream de Node.js y BodyInit del Web Standard.
+                body: body as any, 
                 // @ts-ignore: 'duplex: "half"' es un requisito de Node.js para el fetch con cuerpo.
                 duplex: 'half' 
             });
@@ -120,7 +122,9 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
-const server = createServer(createWebFetchHandler(app))
+// FIX TS2345: Se utiliza 'app as Elysia<any>' para forzar al compilador a aceptar el argumento,
+// ya que el tipo inferido de Elysia es excesivamente complejo y genera incompatibilidad.
+const server = createServer(createWebFetchHandler(app as Elysia<any>))
 
 // 5. Forzar al servidor a escuchar el puerto requerido por Azure (soluciona el error 504).
 server.listen(SERVER_PORT, () => {
