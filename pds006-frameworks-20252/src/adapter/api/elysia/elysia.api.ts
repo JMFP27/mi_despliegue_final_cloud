@@ -4,9 +4,9 @@ import { Controller } from "./controller.elysia"; // RUTA CORREGIDA
 
 export class ElysiaApiAdapter {
     private controller: Controller
-    // El tipo de 'app' es ahora la instancia de Elysia con las rutas
-    // Eliminamos el prefijo del constructor del adaptador.
-    public app: Elysia 
+    // CORRECCIÓN: Cambiamos el tipo explícito 'Elysia' por 'any' para evitar el conflicto de tipado TS2322
+    // con la compleja inferencia de tipos que produce .use(this.controller.routes()).
+    public app: any 
 
     constructor(
         computerService: ComputerService,
@@ -20,7 +20,7 @@ export class ElysiaApiAdapter {
         )
         
         // CORRECCIÓN: Inicializamos la aplicación Elysia y le aplicamos las rutas del controlador,
-        // PERO SIN aplicar el prefijo '/api' aquí. Esto devuelve una Elysia<"", ...>
+        // PERO SIN aplicar el prefijo '/api' aquí.
         this.app = new Elysia()
             .use(this.controller.routes())
     }
