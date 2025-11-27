@@ -2,9 +2,8 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos Context para tipar el notFound handler.
+// Importamos Context y Elysia para el tipado explícito.
 import Elysia, { Context } from "elysia"; 
-// Importamos los módulos HTTP nativo y Stream de Node.js.
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Readable } from 'node:stream';
 
@@ -37,12 +36,22 @@ const adapter = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN LA CADENA BASE
-// La definición encadenada de onError y notFound garantiza que el tipo base los incluya
-// y previene el error 'Property notFound does not exist'.
-let app = new Elysia()
+// 2. CONSTRUIR LA APLICACIÓN ELYSIA
+let app = new Elysia();
 
-// 3A. MANEJADOR DE ERRORES INTERNO (500)
+
+// 3. DEFINICIÓN DE RUTAS Y GRUPOS (Se definen primero)
+app
+    // Ruta de health check.
+    .get('/', () => 'PDS006 San Rafael API running OK.')
+    
+    // Agrupación de la API.
+    // TIPADO CORREGIDO: Tipamos 'group' explícitamente como Elysia para resolver TS7006.
+    .group('/api', (group: Elysia) => group.use(adapter.app))
+
+// 4. MANEJADORES GLOBALES (DEFINIDOS AL FINAL DE LA CADENA para resolver TS2339)
+
+// 4A. MANEJADOR DE ERRORES INTERNO (500)
 .onError(({ error, set }) => {
     set.status = 500;
     
@@ -57,7 +66,8 @@ let app = new Elysia()
     };
 })
 
-// 3B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+// 4B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+// Colocar notFound al final ayuda a que el sistema de tipos de Elysia lo reconozca.
 .notFound((context: Context) => { 
     context.set.status = 404;
     console.log("NOT_FOUND (404): Route requested does not exist.");
@@ -66,15 +76,6 @@ let app = new Elysia()
         message: "Route Not Found",
     };
 })
-
-
-// 4. DEFINICIÓN DE RUTAS (Encadenadas al final)
-
-    // Ruta de health check.
-    .get('/', () => 'PDS006 San Rafael API running OK.')
-    
-    // Agrupación de la API
-    .group('/api', (group) => group.use(adapter.app))
 
 
 // 5. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
