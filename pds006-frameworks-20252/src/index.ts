@@ -38,12 +38,12 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
-// Dejamos que TS infiera el tipo base para el app principal.
+// Inicializamos con Elysia() para que los handlers globales (como onError)
+// puedan inferir correctamente el tipo de contexto necesario.
 let app = new Elysia();
 
 // *** 2A. MANEJADORES DE ERRORES GLOBALES (Configuración separada) ***
 
-// Usamos @ts-ignore solo para notFound, ya que es la única que persiste si no hay un cast global.
 // 1. Manejador explícito de rutas no encontradas (404)
 // @ts-ignore
 app.notFound((context: Context) => { 
@@ -56,12 +56,13 @@ app.notFound((context: Context) => {
 });
 
 // 2. Manejador de errores interno (e.g., errores de código 500)
-// FIX PRINCIPAL: Tipamos explícitamente el contexto como ErrorContext para resolver TS2339.
-app.onError((context: ErrorContext) => {
-    const { error, set } = context; 
+// Solución: Aseguramos el tipado correcto de la función para que TS reconozca
+// las propiedades 'error' y 'set' del ErrorContext.
+app.onError(({ error, set }) => {
+    // Usamos el argumento desestructurado para forzar la inferencia
+    // de las propiedades que sabemos que existen en un contexto de error.
     set.status = 500;
     
-    // El objeto 'error' ahora está garantizado por el tipado ErrorContext
     const err = error as unknown as Error; 
 
     console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
