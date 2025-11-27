@@ -40,28 +40,11 @@ const adapter = new ElysiaApiAdapter(
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
 // Usamos Elysia<any> para simplificar el tipo general y permitir el uso de app.fetch en el adaptador HTTP.
 const app = new Elysia<any>()
-    // Ruta de health check.
-    .get('/', () => 'PDS006 San Rafael API running OK.')
-    
-    // El método .group() acepta la instancia del adaptador (que ya es una app Elysia)
-    // Usamos el hook .use() para incrustar las rutas del adaptador bajo /api
-    .group('/api', (group) => group.use(adapter.app))
 
-    // *** 2. MANEJADORES DE ERRORES ***
-
-    // Manejador explícito de rutas no encontradas (404)
-    // Usamos Pick<Context, 'set'> para tipar 'set' y resolver el TS7031
-    .notFound(({ set }: Pick<Context, 'set'>) => { 
-        set.status = 404;
-        console.log("NOT_FOUND (404): Route requested does not exist.");
-        return {
-            error: true,
-            message: "Route Not Found",
-        };
-    })
+    // *** 2A. MANEJADORES DE ERRORES GLOBALES (Colocados ANTES de las rutas complejas para asegurar tipado) ***
 
     // Manejador de errores interno (e.g., errores de código 500)
-    // Usamos ErrorContext para tipar { error, set }, resolviendo todos los errores de tipado.
+    // Usamos ErrorContext para tipar { error, set }, resolviendo el TS2339 y TS7031.
     .onError(({ error, set }: ErrorContext) => {
         set.status = 500;
         
@@ -76,7 +59,26 @@ const app = new Elysia<any>()
             trace: err.message
         };
     })
+
+    // Manejador explícito de rutas no encontradas (404)
+    // Usamos Pick<Context, 'set'> para tipar 'set' y resolver el TS7031.
+    .notFound(({ set }: Pick<Context, 'set'>) => { 
+        set.status = 404;
+        console.log("NOT_FOUND (404): Route requested does not exist.");
+        return {
+            error: true,
+            message: "Route Not Found",
+        };
+    })
     
+    // *** 2B. DEFINICIÓN DE RUTAS (Ahora definidas después de los handlers globales) ***
+
+    // Ruta de health check.
+    .get('/', () => 'PDS006 San Rafael API running OK.')
+    
+    // El método .group() acepta la instancia del adaptador (que ya es una app Elysia)
+    // Usamos el hook .use() para incrustar las rutas del adaptador bajo /api
+    .group('/api', (group) => group.use(adapter.app))
 
 
 // 3. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
