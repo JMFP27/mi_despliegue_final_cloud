@@ -37,9 +37,7 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
-// Esto evita los errores TS2719 y TS2339 causados por la reasignación de tipos intermedios.
-// Usamos 'as Elysia<any>' al final para asegurar la compatibilidad con el adaptador HTTP
-// de Node.js que espera un tipo genérico.
+// El cast 'as Elysia<any>' debe estar al final de la cadena de métodos para ser sintácticamente válido.
 const app = new Elysia()
     
     // 2A. MANEJADOR DE ERRORES INTERNO (500)
