@@ -36,49 +36,47 @@ const adapter = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN LA CADENA BASE
-
-// SOLUCIÓN: Declarar la variable 'app' con un tipo forzado y genérico (Elysia<any>)
-// para evitar problemas de inferencia de tipos encadenados (TS2719, TS2339).
-let app: Elysia<any> = new Elysia() as Elysia<any>
-
-
-// 2A. MANEJADOR DE ERRORES INTERNO (500)
-// Asignación explícita.
-app = app.onError(({ error, set }) => {
-    set.status = 500;
+// 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
+// Esto evita los errores TS2719 y TS2339 causados por la reasignación de tipos intermedios.
+// Usamos 'as Elysia<any>' al final para asegurar la compatibilidad con el adaptador HTTP
+// de Node.js que espera un tipo genérico.
+const app = new Elysia()
     
-    const err = error as unknown as Error; 
+    // 2A. MANEJADOR DE ERRORES INTERNO (500)
+    .onError(({ error, set }) => {
+        set.status = 500;
+        
+        const err = error as unknown as Error; 
 
-    console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
-    
-    return {
-        error: true,
-        message: `Internal Server Error: ${err.name}`,
-        trace: err.message
-    };
-})
+        console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
+        
+        return {
+            error: true,
+            message: `Internal Server Error: ${err.name}`,
+            trace: err.message
+        };
+    })
 
-// 2B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-// El tipo ya está forzado a Elysia<any>, por lo que 'notFound' debería existir.
-app = app.notFound((context: Context) => { 
-    context.set.status = 404;
-    console.log("NOT_FOUND (404): Route requested does not exist.");
-    return {
-        error: true,
-        message: "Route Not Found",
-    };
-})
+    // 2B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+    .notFound((context: Context) => { 
+        context.set.status = 404;
+        console.log("NOT_FOUND (404): Route requested does not exist.");
+        return {
+            error: true,
+            message: "Route Not Found",
+        };
+    })
 
-
-// 3. DEFINICIÓN DE RUTAS Y GRUPOS 
-app = app
+    // 3. DEFINICIÓN DE RUTAS Y GRUPOS 
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
     // Agrupación de la API.
-    // Usamos Elysia<any> para el grupo para evitar problemas de compatibilidad (TS2345 y TS7006)
-    .group('/api', (group: Elysia<any>) => group.use(adapter.app))
+    // Usamos el tipo inferido para 'group' para mayor robustez en la cadena.
+    .group('/api', (group) => group.use(adapter.app))
+
+    // Forzamos el tipo final a Elysia<any> para compatibilidad con el servidor Node.js
+    as Elysia<any>
 
 
 // 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
@@ -144,7 +142,6 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 5. Iniciar el servidor HTTP de Node.js usando el adaptador.
-// 'app' ya está tipado como Elysia<any>.
 const server = createServer(createWebFetchHandler(app)) 
 
 // 6. Forzar al servidor a escuchar el puerto requerido por Azure.
