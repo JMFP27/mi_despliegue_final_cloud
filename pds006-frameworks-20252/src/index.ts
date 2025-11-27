@@ -49,9 +49,8 @@ function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
     // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES
     return app
         // 2B. MANEJADOR DE ERRORES INTERNO (500)
-        // Eliminamos el tipado explícito del parámetro 'context' para resolver TS2769.
-        .onError((context) => {
-            // El contexto se infiere como 'any' pero podemos usar sus propiedades.
+        // Tipamos el contexto como 'any' para resolver el TS7006.
+        .onError((context: any) => {
             const { error, set } = context; 
             set.status = 500;
             
@@ -67,7 +66,8 @@ function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
         })
 
         // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-        .notFound((context) => { 
+        // Tipamos el contexto como 'any' para resolver el TS7006 y forzar la existencia de .notFound.
+        .notFound((context: any) => { 
             context.set.status = 404;
             console.log("NOT_FOUND (404): Route requested does not exist.");
             return {
@@ -80,8 +80,8 @@ function buildElysiaApp(adapter: ElysiaApiAdapter): Elysia<any> {
         // Ruta de health check.
         .get('/', () => 'PDS006 San Rafael API running OK.')
         
-        // Agrupación de la API.
-        .group('/api', (group) => group.use(adapter.app));
+        // Agrupación de la API. Tipamos el grupo como 'any' para resolver el TS7006.
+        .group('/api', (group: any) => group.use(adapter.app));
 }
 
 // 2. Construir la aplicación usando la función encapsulada
