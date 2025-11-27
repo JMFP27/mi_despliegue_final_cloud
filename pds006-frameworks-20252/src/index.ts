@@ -43,13 +43,18 @@ const app = new Elysia()
     // AÑADIDO: Manejador de errores para depuración. Captura errores de runtime y los registra.
     .onError(({ error, set }) => {
         set.status = 500
-        console.error("ELYISA RUNTIME ERROR:", error.name, error.message, error.stack)
+        
+        // FIX TS2339: Se realiza una aserción de tipo (error as Error) para asegurar
+        // que TypeScript reconozca las propiedades 'name', 'message' y 'stack'.
+        const err = error as Error;
+
+        console.error("ELYISA RUNTIME ERROR:", err.name, err.message, err.stack)
         
         // El error de App Insights a menudo causa esto. Devolvemos un 500 amigable.
         return {
             error: true,
-            message: `Internal Server Error: ${error.name}`,
-            trace: error.message
+            message: `Internal Server Error: ${err.name}`,
+            trace: err.message
         }
     })
     // FIX CLAVE: Añadir una ruta raíz (/) para el health check y el puerto de entrada.
