@@ -1,12 +1,7 @@
 // elysia.api.ts
-import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
-import Elysia from "elysia";
-import openapi from "@elysiajs/openapi"; // 👈 Importa openapi
-import { Controller } from "./controller.elysia";
-
 export class ElysiaApiAdapter {
     private controller: Controller;
-    public app: any; 
+    public app: any; // 👈 Seguimos usando 'any' para evitar TS2322
 
     constructor(
         computerService: ComputerService,
@@ -19,16 +14,18 @@ export class ElysiaApiAdapter {
             medicalDeviceService
         );
 
-        this.app = new Elysia()
+        // Configura OpenAPI con información básica
+        const app = new Elysia()
             .use(openapi({
                 documentation: {
                     info: {
                         title: 'PDS006 API',
-                        version: '1.0.0',
-                        description: 'API para gestión de dispositivos en San Rafael'
+                        version: '1.0.0'
                     }
                 }
             }))
             .use(this.controller.routes());
+
+        this.app = app;
     }
 }
