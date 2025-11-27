@@ -122,9 +122,8 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
-// FIX TS2345: Se utiliza 'app as Elysia<any>' para forzar al compilador a aceptar el argumento,
-// ya que el tipo inferido de Elysia es excesivamente complejo y genera incompatibilidad.
-const server = createServer(createWebFetchHandler(app as Elysia<any>))
+// FIX TS2352: Conversión explícita a 'unknown' antes de la aserción de tipo a 'Elysia<any>'.
+const server = createServer(createWebFetchHandler(app as unknown as Elysia<any>))
 
 // 5. Forzar al servidor a escuchar el puerto requerido por Azure (soluciona el error 504).
 server.listen(SERVER_PORT, () => {
