@@ -9,7 +9,7 @@ export class ElysiaApiAdapter {
     public app: any 
 
     constructor(
-        computerService: ComputerService,
+        computerService: ComputerService, 
         deviceService: DeviceService,
         medicalDeviceService: MedicalDeviceService
     ) {
