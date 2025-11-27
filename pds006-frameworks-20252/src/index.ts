@@ -2,11 +2,11 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos Context y ErrorContext para un tipado estricto en los handlers.
-import Elysia, { Context, ErrorContext } from "elysia"; 
+// Importamos Context, ErrorContext y la inferencia de tipos de Elysia para mayor precisión.
+import Elysia, { Context, ErrorContext, Handler } from "elysia"; 
 // Importamos los módulos HTTP nativo y Stream de Node.js, necesarios para la compatibilidad con Azure.
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
-import { Readable } from 'node:stream'; // Necesario para adaptar streams
+import { Readable } from 'node:stream';
 
 // 1. DETERMINACIÓN DEL PUERTO (CRÍTICO para Azure)
 const DEFAULT_AZURE_PORT = 8080;
@@ -38,18 +38,16 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
-// Usamos Elysia<any> para simplificar el tipo general y permitir el uso de app.fetch en el adaptador HTTP.
-const app = new Elysia<any>()
+// Inicializamos la app sin un generic complejo, dejando que TypeScript infiera el resto.
+const app = new Elysia()
 
     // *** 2A. MANEJADORES DE ERRORES GLOBALES (Colocados ANTES de las rutas) ***
 
-    // Manejador de errores interno (e.g., errores de código 500)
-    // FIX TS2339: Usamos type assertion (as ErrorContext) en el parámetro para forzar el tipado.
-    .onError((context) => {
-        const { error, set } = context as ErrorContext;
+    // FIX TS2339 & TS7006: Tipamos el argumento del handler usando el generic Handler<any, any> 
+    // y desestructurando directamente, forzando la compatibilidad de tipos para ErrorContext.
+    .onError(({ error, set }: Parameters<Handler<any, any>>[0] & ErrorContext) => {
         set.status = 500;
         
-        // Cast a Error para acceder a name/message/stack
         const err = error as unknown as Error; 
 
         console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
@@ -61,10 +59,9 @@ const app = new Elysia<any>()
         };
     })
 
-    // Manejador explícito de rutas no encontradas (404)
-    // FIX TS2339: Usamos type assertion (as Context) en el parámetro para forzar el tipado.
-    .notFound((context) => { 
-        const { set } = context as Context;
+    // FIX TS2339 & TS7006: Hacemos lo mismo para notFound, usando el generic Handler<any, any> 
+    // y desestructurando directamente, forzando la compatibilidad de tipos para Context.
+    .notFound(({ set }: Parameters<Handler<any, any>>[0] & Context) => { 
         set.status = 404;
         console.log("NOT_FOUND (404): Route requested does not exist.");
         return {
@@ -78,7 +75,7 @@ const app = new Elysia<any>()
     // Ruta de health check.
     .get('/', () => 'PDS006 San Rafael API running OK.')
     
-    // FIX TS7006: Tipamos explícitamente el parámetro 'group'.
+    // FIX TS7006: Tipamos explícitamente el parámetro 'group' con la app base de Elysia.
     .group('/api', (group: Elysia<any>) => group.use(adapter.app))
 
 
@@ -87,7 +84,6 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
     return async (req: IncomingMessage, res: ServerResponse) => {
         try {
             // 3.1 Convertir Node.js Request a Web Standard Request
-            // Se utiliza req.headers.host para obtener el host, que puede incluir el puerto.
             const hostname = req.headers.host ? req.headers.host : `localhost:${SERVER_PORT}`;
             const url = new URL(req.url || '/', `http://${hostname}`);
             
@@ -145,6 +141,7 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 
 
 // 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
+// Hacemos un cast final a Elysia<any> para la función createWebFetchHandler que espera ese tipo.
 const server = createServer(createWebFetchHandler(app as Elysia<any>))
 
 // 5. Forzar al servidor a escuchar el puerto requerido por Azure.
