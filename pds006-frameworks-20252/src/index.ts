@@ -4,13 +4,10 @@ import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 import Elysia from "elysia";
 
-// 1. DETERMINACIÓN DEL PUERTO
+// 1. DETERMINACIÓN DEL PUERTO (El puerto sigue siendo útil para construir la URL interna,
+// aunque no se usará en .listen()).
 const DEFAULT_AZURE_PORT = 8080;
 const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
-// Usamos la dirección 0.0.0.0 para escuchar en todas las interfaces, estándar en la nube.
-const SERVER_HOST = '0.0.0.0'; 
-
-// Base URL para llamadas internas. Usamos 127.0.0.1 como loopback explícito.
 const API_BASE_URL = `http://127.0.0.1:${SERVER_PORT}/api`;
 
 const deviceRepository = new InMemoryDeviceRepository()
@@ -37,13 +34,12 @@ const adapter = new ElysiaApiAdapter(
     medicalDeviceService
 )
 
-// 2. CONSTRUIR Y APLICAR EL PREFIJO FINAL
+// 2. CONSTRUIR LA APLICACIÓN
 const app = new Elysia()
-    // Manejador de errores para depuración (con el fix de TS).
+    // Manejador de errores para depuración.
     .onError(({ error, set }) => {
         set.status = 500
         
-        // Asersión de tipo para resolver errores de TypeScript (TS2339).
         const err = error as Error;
 
         console.error("ELYISA RUNTIME ERROR:", err.name, err.message, err.stack)
@@ -58,13 +54,18 @@ const app = new Elysia()
     .get('/', () => 'PDS006 San Rafael API running OK.')
     .group('/api', (group) => group.use(adapter.app))
 
-// 3. INICIAR LA APLICACIÓN DE FORMA ESTÁNDAR (Node.js mode) usando .listen()
-// Esto garantiza que el proceso del servidor se mantenga activo en el puerto.
-app.listen({ 
-    port: SERVER_PORT,
-    hostname: SERVER_HOST 
-}, () => {
-    // Logs para confirmar el inicio.
-    console.log(`[Elysia] 🦊 Running compatible on Node.js at http://${SERVER_HOST}:${SERVER_PORT}`)
-    console.log(`[App] Server listening on port ${SERVER_PORT}`);
-});
+// 3. CAMBIO CRÍTICO: MODO WEB STANDARD CON KEEP-ALIVE
+// Azure espera que exportemos el objeto de la aplicación (Web-Standard/fetch API).
+// Esto hace que el proceso de Node.js se cierre inmediatamente después de la exportación.
+// Para evitar el cierre del proceso (y el 504), inicializamos un temporizador de "Keep-Alive".
+console.log(`[App] Running in Azure WebStandard mode. Keeping process alive with setInterval.`);
+
+// Este temporizador evita que el proceso Node.js muera, ya que Elysia no ha usado .listen().
+// Se ejecutará cada 10 minutos (600,000 ms) para evitar problemas de optimización.
+setInterval(() => {
+    // Si necesitas un chequeo de salud interno, agrégalo aquí.
+    // console.log("[App] Keep-Alive tick.");
+}, 600000); 
+
+// Exportamos el objeto de la aplicación, como lo exige el mensaje de error anterior.
+export default app;
