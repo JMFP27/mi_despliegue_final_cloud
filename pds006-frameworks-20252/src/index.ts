@@ -3,8 +3,11 @@ import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 import Elysia from "elysia";
+// Importamos el módulo HTTP nativo de Node.js
+import { createServer } from 'node:http';
 
-// 1. DETERMINACIÓN DEL PUERTO
+// 1. DETERMINACIÓN DEL PUERTO (CRÍTICO)
+// Azure espera que el servidor escuche el puerto definido por la variable de entorno PORT.
 const DEFAULT_AZURE_PORT = 8080;
 const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
 const API_BASE_URL = `http://127.0.0.1:${SERVER_PORT}/api`;
@@ -53,12 +56,13 @@ const app = new Elysia()
     .get('/', () => 'PDS006 San Rafael API running OK.')
     .group('/api', (group) => group.use(adapter.app))
 
-// 3. SOLUCIÓN FINAL: EXPORTAR EL HANDLER DE FETCH EXPLÍCITAMENTE
-// Azure espera una función de manejo (handler) compatible con la API de Fetch, 
-// no la instancia de Elysia directamente. Esto debería resolver el problema de 
-// inicialización y el 504.
-console.log(`[App] Exporting explicit fetch handler for Azure compatibility.`);
+// 3. SOLUCIÓN FINAL: Crear y escuchar un servidor HTTP estándar de Node.js.
+// Usamos app.fetch de Elysia como el manejador de solicitudes.
+const server = createServer(app.fetch)
 
-export default {
-    fetch: app.fetch
-}
+// Forzamos el servidor a escuchar el puerto, que es el comportamiento esperado por Azure App Service.
+server.listen(SERVER_PORT, () => {
+    console.log(`[App] Standard Node.js HTTP server running and listening on port ${SERVER_PORT}.`);
+})
+
+// Nota: No se utiliza 'export default' en este modo, ya que el proceso se mantiene activo mediante server.listen().
