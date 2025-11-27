@@ -3,11 +3,11 @@ import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 import Elysia from "elysia";
-// Importamos el módulo HTTP nativo de Node.js
-import { createServer } from 'node:http';
+// Importamos los módulos HTTP nativo y Stream de Node.js.
+import { IncomingMessage, ServerResponse, createServer } from 'node:http';
+import { Readable } from 'node:stream'; // Necesario para adaptar streams
 
 // 1. DETERMINACIÓN DEL PUERTO (CRÍTICO)
-// Azure espera que el servidor escuche el puerto definido por la variable de entorno PORT.
 const DEFAULT_AZURE_PORT = 8080;
 const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
 const API_BASE_URL = `http://127.0.0.1:${SERVER_PORT}/api`;
@@ -56,13 +56,75 @@ const app = new Elysia()
     .get('/', () => 'PDS006 San Rafael API running OK.')
     .group('/api', (group) => group.use(adapter.app))
 
-// 3. SOLUCIÓN FINAL: Crear y escuchar un servidor HTTP estándar de Node.js.
-// Usamos app.fetch de Elysia como el manejador de solicitudes.
-const server = createServer(app.fetch)
 
-// Forzamos el servidor a escuchar el puerto, que es el comportamiento esperado por Azure App Service.
+// 3. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
+// Esto es necesario para que el handler de Elysia (app.fetch) pueda ser usado por createServer().
+const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
+    return async (req: IncomingMessage, res: ServerResponse) => {
+        try {
+            // 3.1 Convertir Node.js Request a Web Standard Request
+            const hostname = req.headers.host ? req.headers.host : 'localhost';
+            const url = new URL(req.url || '/', `http://${hostname}`);
+            
+            // Determinar el cuerpo de la solicitud: solo si no es GET/HEAD.
+            const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
+            // Convertir el stream de Node.js a un stream Web para el cuerpo de la solicitud.
+            const body = hasBody ? Readable.toWeb(req) : null; 
+
+            // Convertir Node.js headers a Web Headers
+            const headers = new Headers();
+            for (const [key, value] of Object.entries(req.headers)) {
+                if (value) {
+                    if (Array.isArray(value)) {
+                        value.forEach(v => headers.append(key, v));
+                    } else {
+                        headers.append(key, value);
+                    }
+                }
+            }
+
+            // Construir el objeto Web Request. 'duplex' es necesario para Node.js fetch compatibility.
+            const webRequest = new Request(url, {
+                method: req.method,
+                headers: headers,
+                body: body,
+                // @ts-ignore: 'duplex: "half"' es un requisito de Node.js para el fetch con cuerpo.
+                duplex: 'half' 
+            });
+
+            // 3.2 Invocar al handler de Elysia (app.fetch)
+            const webResponse = await elysiaApp.fetch(webRequest);
+
+            // 3.3 Convertir Web Standard Response a Node.js Response
+            res.statusCode = webResponse.status;
+            webResponse.headers.forEach((value, key) => {
+                res.setHeader(key, value);
+            });
+
+            if (webResponse.body) {
+                // Leer el cuerpo del Web Stream y canalizarlo al Node.js Response
+                await Readable.fromWeb(webResponse.body as any).pipe(res);
+            } else {
+                res.end();
+            }
+
+        } catch (error) {
+            console.error("Error en el adaptador HTTP/Web Standard:", error);
+            if (!res.headersSent) {
+                res.statusCode = 500;
+                res.end("Internal Server Error (Adapter Failure)");
+            }
+        }
+    };
+}
+
+
+// 4. Iniciar el servidor HTTP de Node.js usando el adaptador.
+const server = createServer(createWebFetchHandler(app))
+
+// Forzamos el servidor a escuchar el puerto y mantener el proceso vivo.
 server.listen(SERVER_PORT, () => {
-    console.log(`[App] Standard Node.js HTTP server running and listening on port ${SERVER_PORT}.`);
+    console.log(`[App] Node.js HTTP Server: PDS006 API listening on port ${SERVER_PORT}.`);
 })
 
-// Nota: No se utiliza 'export default' en este modo, ya que el proceso se mantiene activo mediante server.listen().
+// Exportación no necesaria, el proceso se mantiene activo por server.listen().
