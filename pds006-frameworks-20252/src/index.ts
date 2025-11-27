@@ -2,9 +2,8 @@ import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
 import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
-// Importamos Context y la inferencia de tipos de Elysia. No necesitamos ErrorContext
-// ya que la desestructuración de onError maneja la inferencia implícitamente.
-import Elysia from "elysia"; 
+// Importamos Context para tipar el notFound handler, resolviendo el error TS7006.
+import Elysia, { Context } from "elysia"; 
 // Importamos los módulos HTTP nativo y Stream de Node.js.
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -39,10 +38,39 @@ const adapter = new ElysiaApiAdapter(
 )
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA
-// Inicializamos con Elysia()
 let app = new Elysia();
 
-// 3. DEFINICIÓN DE RUTAS Y MANEJADORES GLOBALES (Encadenamiento unificado)
+// 3. MANEJADORES GLOBALES (DEFINIDOS PRIMERO PARA MEJOR INFERENCIA DE TIPOS)
+// Este orden resuelve el error 'Property 'notFound' does not exist'.
+
+// 3A. MANEJADOR DE ERRORES INTERNO (500)
+app.onError(({ error, set }) => {
+    // Usamos el argumento desestructurado para forzar la inferencia
+    set.status = 500;
+    
+    const err = error as unknown as Error; 
+
+    console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
+    
+    return {
+        error: true,
+        message: `Internal Server Error: ${err.name}`,
+        trace: err.message
+    };
+});
+
+// 3B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+// Tipamos explícitamente 'context: Context' para resolver el error TS7006.
+app.notFound((context: Context) => { 
+    context.set.status = 404;
+    console.log("NOT_FOUND (404): Route requested does not exist.");
+    return {
+        error: true,
+        message: "Route Not Found",
+    };
+});
+
+// 4. DEFINICIÓN DE RUTAS (Encadenadas al final)
 
 app
     // Ruta de health check.
@@ -51,41 +79,13 @@ app
     // Agrupación de la API
     .group('/api', (group) => group.use(adapter.app))
 
-    // 3A. MANEJADOR DE ERRORES INTERNO (500)
-    .onError(({ error, set }) => {
-        // Usamos el argumento desestructurado para forzar la inferencia
-        set.status = 500;
-        
-        const err = error as unknown as Error; 
 
-        console.error("ELYISA RUNTIME ERROR (500):", err.name, err.message, err.stack);
-        
-        return {
-            error: true,
-            message: `Internal Server Error: ${err.name}`,
-            trace: err.message
-        };
-    })
-
-    // 3B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    // FIX PRINCIPAL: Encadenamos notFound para asegurar que el método existe
-    // en la instancia final y que se infiere correctamente.
-    .notFound((context) => { 
-        context.set.status = 404;
-        console.log("NOT_FOUND (404): Route requested does not exist.");
-        return {
-            error: true,
-            message: "Route Not Found",
-        };
-    })
-
-
-// 4. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
+// 5. ADAPTADOR: Función para convertir la API de Node.js (req, res) a la API Web Standard (Request, Response).
 // Tipamos la aplicación aquí como Elysia<any> para simplicidad.
 const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
     return async (req: IncomingMessage, res: ServerResponse) => {
         try {
-            // 4.1 Convertir Node.js Request a Web Standard Request
+            // 5.1 Convertir Node.js Request a Web Standard Request
             const hostname = req.headers.host ? req.headers.host : `localhost:${SERVER_PORT}`;
             const url = new URL(req.url || '/', `http://${hostname}`);
             
@@ -115,10 +115,10 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
                 duplex: 'half' 
             });
 
-            // 4.2 Invocar al handler de Elysia (app.fetch)
+            // 5.2 Invocar al handler de Elysia (app.fetch)
             const webResponse = await elysiaApp.fetch(webRequest);
 
-            // 4.3 Convertir Web Standard Response a Node.js Response
+            // 5.3 Convertir Web Standard Response a Node.js Response
             res.statusCode = webResponse.status;
             webResponse.headers.forEach((value, key) => {
                 res.setHeader(key, value);
@@ -142,11 +142,11 @@ const createWebFetchHandler = (elysiaApp: Elysia<any>) => {
 }
 
 
-// 5. Iniciar el servidor HTTP de Node.js usando el adaptador.
+// 6. Iniciar el servidor HTTP de Node.js usando el adaptador.
 // Forzamos el tipo de 'app' a Elysia<any> aquí para el adaptador.
 const server = createServer(createWebFetchHandler(app as Elysia<any>)) 
 
-// 6. Forzar al servidor a escuchar el puerto requerido por Azure.
+// 7. Forzar al servidor a escuchar el puerto requerido por Azure.
 server.listen(SERVER_PORT, () => {
     console.log(`[App] Node.js HTTP Server: PDS006 API listening on port ${SERVER_PORT}.`);
 })
