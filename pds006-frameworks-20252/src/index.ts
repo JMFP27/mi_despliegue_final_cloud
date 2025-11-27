@@ -4,8 +4,7 @@ import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 import Elysia from "elysia";
 
-// 1. DETERMINACIÓN DEL PUERTO (El puerto sigue siendo útil para construir la URL interna,
-// aunque no se usará en .listen()).
+// 1. DETERMINACIÓN DEL PUERTO
 const DEFAULT_AZURE_PORT = 8080;
 const SERVER_PORT: number = process.env.PORT ? Number(process.env.PORT) : DEFAULT_AZURE_PORT;
 const API_BASE_URL = `http://127.0.0.1:${SERVER_PORT}/api`;
@@ -54,18 +53,12 @@ const app = new Elysia()
     .get('/', () => 'PDS006 San Rafael API running OK.')
     .group('/api', (group) => group.use(adapter.app))
 
-// 3. CAMBIO CRÍTICO: MODO WEB STANDARD CON KEEP-ALIVE
-// Azure espera que exportemos el objeto de la aplicación (Web-Standard/fetch API).
-// Esto hace que el proceso de Node.js se cierre inmediatamente después de la exportación.
-// Para evitar el cierre del proceso (y el 504), inicializamos un temporizador de "Keep-Alive".
-console.log(`[App] Running in Azure WebStandard mode. Keeping process alive with setInterval.`);
+// 3. SOLUCIÓN FINAL: EXPORTAR EL HANDLER DE FETCH EXPLÍCITAMENTE
+// Azure espera una función de manejo (handler) compatible con la API de Fetch, 
+// no la instancia de Elysia directamente. Esto debería resolver el problema de 
+// inicialización y el 504.
+console.log(`[App] Exporting explicit fetch handler for Azure compatibility.`);
 
-// Este temporizador evita que el proceso Node.js muera, ya que Elysia no ha usado .listen().
-// Se ejecutará cada 10 minutos (600,000 ms) para evitar problemas de optimización.
-setInterval(() => {
-    // Si necesitas un chequeo de salud interno, agrégalo aquí.
-    // console.log("[App] Keep-Alive tick.");
-}, 600000); 
-
-// Exportamos el objeto de la aplicación, como lo exige el mensaje de error anterior.
-export default app;
+export default {
+    fetch: app.fetch
+}
