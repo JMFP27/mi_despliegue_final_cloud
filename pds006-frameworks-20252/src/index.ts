@@ -16,9 +16,11 @@ declare global {
 globalThis.Bun = undefined;
 globalThis.Deno = undefined;
 
-// ** AJUSTE 3: IMPORTAR EL ADAPTADOR DE NODE.JS **
-// Esto le dice a Elysia que use la lógica de Node.js, la cual requiere .listen().
-import 'elysia/adapter/node';
+// ** AJUSTE 3: CORRECCIÓN DEL IMPORT DEL ADAPTADOR DE NODE.JS (CRÍTICO) **
+// La ruta 'elysia/adapter/node' causa un error ERR_PACKAGE_PATH_NOT_EXPORTED
+// cuando se compila a CommonJS y se ejecuta en Node.js.
+// Usamos la ruta CJS explícita para evitar el error de "subpath not exported".
+import 'elysia/dist/cjs/adapter/node';
 
 // Usamos el puerto estándar 8080 (Azure lo inyecta aquí)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
