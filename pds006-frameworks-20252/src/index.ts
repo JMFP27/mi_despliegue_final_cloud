@@ -1,51 +1,27 @@
-import { ElysiaApiAdapter } from "./adapter/api/elysia/elysia.api";
-import { FileSystemPhotoRepository } from "./adapter/photo/filesystem/filesystem.photo-repository";
-import { InMemoryDeviceRepository } from "./adapter/repository/inmemory/inmemory.device-repository";
-import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
+import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
+import Elysia from "elysia";
+import { Controller } from "./controller.elysia"; 
 
-// ** AJUSTE 1: FIX TS7017 (NECESARIO PARA COMPILAR SIN ERRORES EN NODE) **
-// Declaramos las variables globales de Bun y Deno para que TypeScript lo sepa.
-declare global {
-  var Bun: unknown;
-  var Deno: unknown;
+export class ElysiaApiAdapter {
+    private controller: Controller
+    // El tipo de 'app' es ahora la instancia de Elysia con las rutas
+    // Eliminamos el prefijo del constructor del adaptador.
+    public app: Elysia 
+
+    constructor(
+        computerService: ComputerService,
+        deviceService: DeviceService,
+        medicalDeviceService: MedicalDeviceService
+    ) {
+        this.controller = new Controller(
+            computerService,
+            deviceService,
+            medicalDeviceService
+        )
+        
+        // CORRECCIÓN: Inicializamos la aplicación Elysia y le aplicamos las rutas del controlador,
+        // PERO SIN aplicar el prefijo '/api' aquí. Esto devuelve una Elysia<"", ...>
+        this.app = new Elysia()
+            .use(this.controller.routes())
+    }
 }
-
-// ** AJUSTE 2: FORZAR EL MODO NODE.JS (CRÍTICO) **
-// Al establecer Bun y Deno en `undefined` antes de cualquier importación de Elysia,
-// forzamos a Elysia a usar su adaptador de Node.js.
-globalThis.Bun = undefined;
-globalThis.Deno = undefined;
-
-// ** AJUSTE 3: ÚLTIMA CORRECCIÓN DEL IMPORT DE NODE.JS (CRÍTICO) **
-// Intentaremos acceder a la ruta oficial de Node.js: 'elysia/node'.
-// Esto debería resolver el error ERR_PACKAGE_PATH_NOT_EXPORTED.
-import 'elysia/node';
-
-// Usamos el puerto estándar 8080 (Azure lo inyecta aquí)
-const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
-const API_URL = `http://localhost:${PORT}/api`;
-
-// 1. Inicialización de Repositorios
-const deviceRepository = new InMemoryDeviceRepository();
-const photoRepository = new FileSystemPhotoRepository();
-
-// 2. Inicialización de Servicios
-const computerService = new ComputerService(
-  deviceRepository,
-  photoRepository,
-  new URL(API_URL) // Usamos la URL construida para los servicios
-);
-
-const deviceService = new DeviceService(deviceRepository);
-const medicalDeviceService = new MedicalDeviceService(deviceRepository, photoRepository);
-
-// 3. Inicialización del Adaptador de API (que contiene la instancia de Elysia)
-const adapter = new ElysiaApiAdapter(computerService, deviceService, medicalDeviceService);
-
-// 4. Modo de Ejecución (Node.js) - INICIAR EL SERVIDOR
-// Al importar 'elysia/node' arriba, la función .listen() usará el adaptador de Node.js.
-adapter.app.listen(PORT, ({ hostname, port }) => {
-  // Cuando Azure lo inicie, el hostname será '0.0.0.0' o similar.
-  console.log(`[SUCCESS] 🦊 Elysia Server is running at http://${hostname}:${port}`);
-  console.log(`[INFO] 🚀 API Base URL: ${API_URL}`);
-});
