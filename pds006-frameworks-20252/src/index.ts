@@ -38,8 +38,19 @@ const adapter = new ElysiaApiAdapter(
 
 // 2. CONSTRUIR LA APLICACIÓN ELYSIA Y DEFINIR MANEJADORES GLOBALES EN UNA CADENA CONTINUA.
 const app = new Elysia()
+
+    // 2A. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
+    // FIX: Colocamos .notFound aquí. El tipado explícito (context: Context) evita el error 'implicit any'.
+    .notFound((context: Context) => { 
+        context.set.status = 404;
+        console.log("NOT_FOUND (404): Route requested does not exist.");
+        return {
+            error: true,
+            message: "Route Not Found",
+        };
+    })
     
-    // 2A. MANEJADOR DE ERRORES INTERNO (500)
+    // 2B. MANEJADOR DE ERRORES INTERNO (500)
     .onError(({ error, set }) => {
         set.status = 500;
         
@@ -54,17 +65,6 @@ const app = new Elysia()
         };
     })
 
-    // 2B. MANEJADOR DE RUTAS NO ENCONTRADAS (404)
-    // FIX TS7031/TS2339: Tipado explícito con (context: Context) para estabilizar el tipo de la cadena
-    // y evitar el error 'implicit any'.
-    .notFound((context: Context) => { 
-        context.set.status = 404;
-        console.log("NOT_FOUND (404): Route requested does not exist.");
-        return {
-            error: true,
-            message: "Route Not Found",
-        };
-    })
 
     // 3. DEFINICIÓN DE RUTAS Y GRUPOS 
     // Ruta de health check.
