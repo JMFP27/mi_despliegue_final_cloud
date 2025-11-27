@@ -1,11 +1,12 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
-// CORRECCIÓN FINAL: Dejamos el nombre del archivo de importación como está en el sistema de archivos
-import { Controller } from "./controller.elysia"; 
 import Elysia from "elysia";
+import { Controller } from "./controller.elysia"; // RUTA CORREGIDA
 
 export class ElysiaApiAdapter {
     private controller: Controller
-    public app: Elysia // Mantenemos la aplicación Elysia pública
+    // El tipo de 'app' es ahora la instancia de Elysia con las rutas
+    // Eliminamos el prefijo del constructor del adaptador.
+    public app: Elysia 
 
     constructor(
         computerService: ComputerService,
@@ -17,8 +18,10 @@ export class ElysiaApiAdapter {
             deviceService,
             medicalDeviceService
         )
-
-        this.app = new Elysia({ prefix: '/api' }) // Re-añadido el prefijo '/api' para la consistencia
+        
+        // CORRECCIÓN: Inicializamos la aplicación Elysia y le aplicamos las rutas del controlador,
+        // PERO SIN aplicar el prefijo '/api' aquí. Esto devuelve una Elysia<"", ...>
+        this.app = new Elysia()
             .use(this.controller.routes())
     }
 }
