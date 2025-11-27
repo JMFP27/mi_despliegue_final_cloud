@@ -3,20 +3,10 @@ import { FileSystemPhotoRepository } from "./adapter/photo/filesystem";
 import { InMemoryDeviceRepository } from "./adapter/repository/inmemory";
 import { ComputerService, DeviceService, MedicalDeviceService } from "./core/service";
 
-// ** FIX TS7017 **: Declaramos las variables globales de Bun y Deno para que TypeScript
-// sepa que pueden ser asignadas sin lanzar el error de "tipo implícito 'any'".
-// Usamos 'declare global' para extender la definición de 'globalThis'.
-declare global {
-  var Bun: unknown;
-  var Deno: unknown;
-}
+// ** Hemos eliminado todos los hacks de compatibilidad (globalThis.Bun/Deno y el import de 'elysia/adapter/node') **
+// Ahora, Elysia debería configurarse por defecto como un handler de fetch, que es lo que Azure espera.
 
-// ** AJUSTE CRÍTICO PARA FORZAR EL MODO NODE.JS **
-// Al establecer Bun y Deno en `undefined` antes de cualquier importación de Elysia,
-// forzamos a Elysia a usar su adaptador de Node.js, permitiendo el uso de `.listen()`.
-globalThis.Bun = undefined;
-globalThis.Deno = undefined;
-
+// Usamos el puerto estándar 8080 si no está definido (aunque no usaremos .listen())
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
 // 1. Inicialización de Repositorios
@@ -24,11 +14,9 @@ const deviceRepository = new InMemoryDeviceRepository();
 const photoRepository = new FileSystemPhotoRepository();
 
 // 2. Inicialización de Servicios
-// Nota: La URL base para las fotos debe construirse dinámicamente o ser una variable de entorno.
 const computerService = new ComputerService(
   deviceRepository,
   photoRepository,
-  // Usamos la variable PORT ya convertida a número
   new URL(`http://localhost:${PORT}/api`)
 );
 
@@ -38,11 +26,9 @@ const medicalDeviceService = new MedicalDeviceService(deviceRepository, photoRep
 // 3. Inicialización del Adaptador de API (que contiene la instancia de Elysia)
 const adapter = new ElysiaApiAdapter(computerService, deviceService, medicalDeviceService);
 
-// 4. ✅ Escucha en el puerto — esto es obligatorio en Azure
-// Si los pasos anteriores funcionaron, esta línea ya no debería lanzar el error "WebStandard does not support listen".
-adapter.app.listen(PORT, () => {
-  console.log(`[INFO] 🦊 Elysia corriendo en el puerto ${PORT}`);
-});
+// 4. Modo de Despliegue (Web Standard)
+// NO usamos .listen(), que es lo que causa el error.
+console.log(`[INFO] 🦊 Elysia inicializada. Exportando la app para que el runtime de Azure la escuche en el puerto ${PORT}.`);
 
-// En este caso, no necesitamos exportar el servidor, ya que usamos el método listen
-// (a menos que el motor de Azure lo requiera, pero probemos sin el export por ahora).
+// Exportar la aplicación por defecto (la recomendación del error)
+export default adapter.app;
