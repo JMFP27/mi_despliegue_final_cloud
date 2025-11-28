@@ -1,7 +1,7 @@
 import { ComputerService, DeviceService, MedicalDeviceService } from "@/core/service";
 import Elysia from "elysia";
 import { Controller } from "./controller.elysia";
-import openapi from "@elysiajs/openapi"; // Importamos openapi de nuevo
+import openapi from "@elysiajs/openapi"; 
 
 export class ElysiaApiAdapter {
     private controller: Controller
@@ -26,19 +26,19 @@ export class ElysiaApiAdapter {
             .get('/', () => "PDS006 San Rafael API running OK.")
             
             // Ruta de Documentación (Swagger)
-            // Esto servirá la interfaz de Swagger en /swagger
-            // CORRECCIÓN: Se ajusta la configuración de openapi para ser compatible con el tipado
-            // de la versión actual, usando `docs` para la ruta del UI y `swagger.path` para el JSON.
-            // Para algunas versiones, se usa `path` para el JSON y `swagger.path` para el UI.
-            // Adoptamos la estructura más segura para evitar el error TS2353.
+            // CORRECCIÓN FINAL: La propiedad `path` define la ruta del Swagger UI.
+            // Esto resuelve el error TS2353 al usar `docs` o la configuración anidada `swagger.path`.
             .use(
                 openapi({
-                    // Ruta donde se genera el JSON de la especificación OpenAPI
-                    path: '/swagger.json', 
-                    // Configuración para la interfaz de usuario de Swagger
-                    docs: {
-                        path: '/swagger', // La ruta donde se accede al Swagger UI
-                        // title: 'San Rafael API Documentation', // Opcional
+                    // Establece la ruta donde se accede al Swagger UI
+                    path: '/swagger',
+                    // Configuración opcional para los metadatos de la API
+                    documentation: {
+                        info: {
+                            title: 'PDS006 San Rafael API',
+                            version: '1.0.0',
+                            description: 'API para la gestión de dispositivos en la Clínica San Rafael.'
+                        }
                     }
                 })
             )
