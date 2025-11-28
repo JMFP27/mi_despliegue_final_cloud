@@ -27,11 +27,18 @@ export class ElysiaApiAdapter {
             
             // Ruta de Documentación (Swagger)
             // Esto servirá la interfaz de Swagger en /swagger
+            // CORRECCIÓN: Se ajusta la configuración de openapi para ser compatible con el tipado
+            // de la versión actual, usando `docs` para la ruta del UI y `swagger.path` para el JSON.
+            // Para algunas versiones, se usa `path` para el JSON y `swagger.path` para el UI.
+            // Adoptamos la estructura más segura para evitar el error TS2353.
             .use(
                 openapi({
-                    path: '/swagger.json', // El JSON de la especificación
-                    swagger: {
-                        path: '/swagger', // La interfaz de usuario
+                    // Ruta donde se genera el JSON de la especificación OpenAPI
+                    path: '/swagger.json', 
+                    // Configuración para la interfaz de usuario de Swagger
+                    docs: {
+                        path: '/swagger', // La ruta donde se accede al Swagger UI
+                        // title: 'San Rafael API Documentation', // Opcional
                     }
                 })
             )
