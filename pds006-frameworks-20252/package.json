@@ -3,7 +3,7 @@
   "version": "1.0.50",
   "description": "",
   "main": "dist/index.js",
-  "scripts": { 
+  "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
     "prestart": "npm run build",
@@ -14,8 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "elysia": "^1.0.26",
-    "@elysiajs/openapi": "^1.4.10",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@elysiajs/openapi": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
